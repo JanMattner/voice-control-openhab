@@ -12,9 +12,9 @@ global.Java = {
     }))
 };
 
-const rbi = require("../lib/ruleBasedInterpreter");
-jest.mock("../lib/utilities");
-const utilities = require("../lib/utilities").utilities;
+const rbi = require("../lib/openHAB/ruleBasedInterpreter");
+jest.mock("../lib/openHAB/utilities");
+const utilities = require("../lib/openHAB/utilities").utilities;
 
 const alt = rbi.ruleBasedInterpreter.alt;
 const seq = rbi.ruleBasedInterpreter.seq;
