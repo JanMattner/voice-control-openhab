@@ -1,9 +1,12 @@
+const {when} = require("jest-when");
 jest.mock("openhab");
 const openhab = require("openhab");
 openhab.items = {
-    getItems: jest.fn().mockReturnValue([])
+    getItems: jest.fn().mockReturnValue([]),
+    getItemsByTag: jest.fn().mockReturnValue([]),
+    getItem: jest.fn().mockReturnValue(null)
 };
-const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel } = require("../lib/openHAB/ruleBasedInterpreter");
+const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties, locationLabel } = require("../lib/openHAB/ruleBasedInterpreter");
 
 let rbi = new RuleBasedInterpreter();
 
@@ -61,6 +64,152 @@ describe("interpretUtterance", () => {
             expect(retItem.sendCommand.mock.calls.length).toBe(1);
             expect(retItem.sendCommand.mock.calls[0].length).toBe(1);
             expect(retItem.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+        });
+    });
+
+    describe("item properties expression", () => {
+        it("sends command to found items by single tag", () => {
+            let item1 = {tags: ["foo", "bar"], sendCommand: jest.fn()};
+            let item2 = {tags: ["foo"], sendCommand: jest.fn()};
+            let item3 = {tags: ["bar"], sendCommand: jest.fn()};
+            let item4 = {tags: ["test", "more", "tags"], sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
+            when(openhab.items.getItemsByTag).calledWith(...["bar"]).mockReturnValue([item1, item3]);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties("something", ["bar"], false),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(1);
+            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item4.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("sends command to found items by multiple tags", () => {
+            let item1 = {tags: ["foo", "bar"], sendCommand: jest.fn()};
+            let item2 = {tags: ["foo", "b"], sendCommand: jest.fn()};
+            let item3 = {tags: ["bar", "foo"], sendCommand: jest.fn()};
+            let item4 = {tags: ["test", "more", "tags"], sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([item1, item3]);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties("something", ["foo", "bar"], false),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(1);
+            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item4.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("sends command to found items by direct location", () => {
+            let item1 = {name: "item1", label: "item1", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn()};
+            
+            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
+            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
+            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something item2 works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("sends command to found items by sub location", () => {
+            let item1 = {name: "item1", label: "item1", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn()};
+            
+            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1]);
+            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
+            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something item3 works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("sends command to found items by self location", () => {
+            let item1 = {name: "item1", label: "item1", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            
+            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
+            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
+            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something item1 works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
+            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("sends no command if items are not in location", () => {
+            let item1 = {name: "item1", label: "item1", type: "SwitchItem", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            
+            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
+            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
+            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            
+            let cmdParameter = 123;
+            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            
+            rbi.interpretUtterance("something item1 works");
+            expect(testFunction.mock.calls.length).toBe(0);
+            expect(item1.sendCommand.mock.calls.length).toBe(0);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+            expect(item3.sendCommand.mock.calls.length).toBe(0);
         });
     });
 
