@@ -22,7 +22,7 @@ beforeEach(() => {
 describe("interpretUtterance", () => {
     describe("single alternative expression", () => {
         it("matches same string", () => {
-            let testExpression = alt(["bar", "foo", "foobar"]);
+            let testExpression = alt("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("foo");
@@ -34,7 +34,7 @@ describe("interpretUtterance", () => {
         });
 
         it("does not match other string", () => {
-            let testExpression = alt(["bar", "foo", "foobar"]);
+            let testExpression = alt("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("fob");
@@ -56,7 +56,7 @@ describe("interpretUtterance", () => {
             openhab.items.getItems.mockReturnValue([retItem])
             
             let cmdParameter = 123;
-            let testExpression = seq([itemLabel(),cmd("foo", cmdParameter)]);
+            let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("my item foo");
@@ -77,7 +77,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItemsByTag).calledWith(...["bar"]).mockReturnValue([item1, item3]);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties("something", ["bar"], false),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties("something", ["bar"], false),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -102,7 +102,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([item1, item3]);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties("something", ["foo", "bar"], false),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties("something", ["foo", "bar"], false),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -129,7 +129,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -153,7 +153,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -177,7 +177,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -201,7 +201,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemProperties(seq(["something",locationLabel()]), ["foo"], true),cmd("works", cmdParameter)]);
+            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -221,7 +221,7 @@ describe("interpretUtterance", () => {
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
             
             let cmdParameter = 123;
-            let testExpression = seq([itemLabel(),cmd("foo", cmdParameter)]);
+            let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -264,7 +264,7 @@ describe("interpretUtterance", () => {
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
 
             let cmdParameter = 123;
-            let testExpression = seq([itemLabel(),cmd("foo", cmdParameter)]);
+            let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -296,7 +296,7 @@ describe("interpretUtterance", () => {
 
     describe("optional expression", () => {
         it("matches same or none string", () => {
-            let testExpression = seq([opt("bar"), "foo"]);
+            let testExpression = seq(opt("bar"), "foo");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("foo");
@@ -306,7 +306,7 @@ describe("interpretUtterance", () => {
         });
 
         it("does not match other string", () => {
-            let testExpression = seq([opt("bar"), "foo"]);
+            let testExpression = seq(opt("bar"), "foo");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("other foo");
@@ -318,7 +318,7 @@ describe("interpretUtterance", () => {
 
     describe("single sequence expression", () => {
         it("matches correct sequence", () => {
-            let testExpression = seq(["bar", "foo", "foobar"]);
+            let testExpression = seq("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("bar foo foobar");
@@ -326,7 +326,7 @@ describe("interpretUtterance", () => {
         });
 
         it("does not match wrong sequence", () => {
-            let testExpression = seq(["bar", "foo", "foobar"]);
+            let testExpression = seq("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance("foo foobar");
