@@ -6,7 +6,7 @@ openhab.items = {
     getItemsByTag: jest.fn().mockReturnValue([]),
     getItem: jest.fn().mockReturnValue(null)
 };
-const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties, locationLabel } = require("../lib/openHAB/ruleBasedInterpreter");
+const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties } = require("../lib/openHAB/ruleBasedInterpreter");
 
 let rbi = new RuleBasedInterpreter();
 
@@ -119,9 +119,9 @@ describe("interpretUtterance", () => {
         });
 
         it("sends command to found items by direct location", () => {
-            let item1 = {name: "item1", label: "item1", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn()};
+            let item1 = {name: "item1", label: "item1", semantics: { isLocation: false }, groupNames: ["item2"], sendCommand: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { isLocation: true }, groupNames: ["item3"], sendCommand: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { isLocation: true }, groupNames: [], sendCommand: jest.fn()};
             
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
             when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
@@ -129,7 +129,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
+            let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -143,9 +143,9 @@ describe("interpretUtterance", () => {
         });
 
         it("sends command to found items by sub location", () => {
-            let item1 = {name: "item1", label: "item1", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn()};
+            let item1 = {name: "item1", label: "item1", semantics: { isLocation: false }, groupNames: ["item2"], sendCommand: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { isLocation: true }, groupNames: ["item3"], sendCommand: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { isLocation: true }, groupNames: [], sendCommand: jest.fn()};
             
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
             when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1]);
@@ -153,7 +153,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
+            let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -167,9 +167,9 @@ describe("interpretUtterance", () => {
         });
 
         it("sends command to found items by self location", () => {
-            let item1 = {name: "item1", label: "item1", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item1 = {name: "item1", label: "item1", type: "GroupItem", semantics: { isLocation: true }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { isLocation: true }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { isLocation: true }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
             
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
             when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
@@ -177,7 +177,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
+            let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
@@ -191,9 +191,9 @@ describe("interpretUtterance", () => {
         });
 
         it("sends no command if items are not in location", () => {
-            let item1 = {name: "item1", label: "item1", type: "SwitchItem", semantics: { semanticType: null }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { semanticType: "Location" }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item1 = {name: "item1", label: "item1", type: "SwitchItem", semantics: { isLocation: false }, groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item2 = {name: "item2", label: "item2", type: "GroupItem", semantics: { isLocation: true }, groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item3 = {name: "item3", label: "item3", type: "GroupItem", semantics: { isLocation: true }, groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
             
             openhab.items.getItems.mockReturnValue([item1, item2, item3]);
             when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
@@ -201,7 +201,7 @@ describe("interpretUtterance", () => {
             when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
             
             let cmdParameter = 123;
-            let testExpression = seq(itemProperties(seq("something",locationLabel()), ["foo"], true),cmd("works", cmdParameter));
+            let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
