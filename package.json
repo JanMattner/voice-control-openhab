@@ -21,6 +21,9 @@
   },
   "devDependencies": {
     "jest": "^27.1.1",
+    "jest-when": "^3.6.0",
     "openhab": "^4.5.1"
+  },
+  "dependencies": {
   }
 }
