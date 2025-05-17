@@ -31,10 +31,11 @@ actions:
           // ***
 
           const { items } = require('openhab');
+          let logger = require('openhab').log('cuevox');
 
           class Expression {
               /**
-               * @param {string[]} tokens 
+               * @param {string[]} tokens
                * @returns {EvaluationResult}
                */
               evaluate(tokens) {
@@ -49,16 +50,16 @@ actions:
           function alt(...expressions) {return new AlternativeExp(...expressions);}
           class AlternativeExp extends Expression {
               /**
-               * @param  {...Expression} expressions 
-               */
+              * @param  {...Expression} expressions
+              */
               constructor(...expressions) {
                   super();
                   this.value = expressions;
               }
 
               evaluate(tokens) {
-                  console.debug("eval alt: " + stringify(this.value));
-                  console.debug("for tokens: " + stringify(tokens));
+                  logger.debug("eval alt: " + stringify(this.value));
+                  logger.debug("for tokens: " + stringify(tokens));
 
                   var success = false;
                   var executeFunction = null;
@@ -68,7 +69,7 @@ actions:
 
                   for (var index = 0; index < this.value.length; index++) {
                       var subexp = this.value[index];
-                      console.debug("alt index: " + index + "; subexp: " + stringify(subexp));
+                      logger.debug("alt index: " + index + "; subexp: " + stringify(subexp));
                       var result = evaluateExpressionOrString(subexp, tokens.slice());
                       if (result.success) {
                           success = true;
@@ -80,7 +81,7 @@ actions:
                       }
                   }
 
-                  console.debug("eval alt: " + success)
+                  logger.debug("eval alt: " + success)
                   return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter);
               }
           }
@@ -92,7 +93,7 @@ actions:
           function seq(...expressions) {return new SequenceExp(...expressions);}
           class SequenceExp extends Expression {
               /**
-               * @param  {...Expression} expressions 
+               * @param  {...Expression} expressions
                */
               constructor(...expressions) {
                   super();
@@ -100,7 +101,7 @@ actions:
               }
 
               evaluate(tokens) {
-                  console.debug("eval seq: " + stringify(this.value));
+                  logger.debug("eval seq: " + stringify(this.value));
                   var success = true;
                   var executeFunction = null;
                   var executeParameter = null;
@@ -110,10 +111,10 @@ actions:
 
                   for (var index = 0; index < this.value.length; index++) {
                       var subexp = this.value[index];
-                      console.debug("eval subexp " + index + "; subexp: " + stringify(subexp))
+                      logger.debug("eval subexp " + index + "; subexp: " + stringify(subexp))
                       var result = evaluateExpressionOrString(subexp, remainingTokens);
                       if (!result.success) {
-                          console.debug("eval subexp " + index + "failed");
+                          logger.debug("eval subexp " + index + "failed");
                           success = false;
                           break;
                       }
@@ -124,20 +125,20 @@ actions:
                       groupItem = result.groupItem || groupItem;
                   }
 
-                  console.debug("eval seq: " + success)
+                  logger.debug("eval seq: " + success)
                   return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter, groupItem);
               }
           }
 
           /**
            * Creates an optional expression. The given expression is not mandatory for a match.
-           * @param  {Expression} expression 
+           * @param  {Expression} expression
            */
           function opt(expression) {return new OptionalExp(expression);}
           class OptionalExp extends Expression {
               /**
-               * 
-               * @param {Expression} expression 
+               *
+               * @param {Expression} expression
                */
               constructor(expression) {
                   super();
@@ -145,15 +146,15 @@ actions:
               }
 
               evaluate(tokens) {
-                  console.debug("eval opt: " + stringify(this.value))
+                  logger.debug("eval opt: " + stringify(this.value))
                   var result = evaluateExpressionOrString(this.value, tokens.slice());
                   if (result.success) {
-                      console.debug("eval opt success")
+                      logger.debug("eval opt success")
                       // only return the reduced token array and other parameters if optional expression was successful.
                       return new EvaluationResult(true, result.remainingTokens, result.executeFunction, result.executeParameter);
                   }
 
-                  console.debug("eval opt fail")
+                  logger.debug("eval opt fail")
                   // otherwise still return successful, but nothing from the optional expression result
                   return new EvaluationResult(true, tokens, null, null);
               }
@@ -162,14 +163,14 @@ actions:
           /**
            * Creates a command expression.
            * If the given expression is matched, the given command is sent to all found items of that rule.
-           * @param {Expression} expression 
-           * @param {string} command 
+           * @param {Expression} expression
+           * @param {string} command
            */
           function cmd(expression, command) {return new CommandExp(expression, command);}
           class CommandExp extends Expression {
               /**
-               * @param {Expression} expression 
-               * @param {string} command 
+               * @param {Expression} expression
+               * @param {string} command
                */
               constructor(expression, command) {
                   super();
@@ -178,10 +179,10 @@ actions:
               }
 
               evaluate(tokens) {
-                  console.debug("eval cmd: " + stringify(this.value));
+                  logger.debug("eval cmd: " + stringify(this.value));
                   var result = evaluateExpressionOrString(this.value, tokens);
 
-                  console.debug("eval cmd result: " + result.success)
+                  logger.debug("eval cmd result: " + result.success)
                   if (!result.success) {
                       return new EvaluationResult(false, tokens, null, null);
                   }
@@ -190,17 +191,17 @@ actions:
 
                   var executeFunction = function(parameter) {
                       if (!parameter || typeof(parameter) != "object") {
-                          console.debug("Trying to send a command, but no proper object parameter found")
+                          logger.info("Trying to send a command, but no proper object parameter found")
                           return;
                       }
 
                       if (!parameter.items) {
-                          console.debug("Trying to send a command, but no items parameter found")
+                          logger.info("Trying to send a command, but no items parameter found")
                           return;
                       }
 
                       parameter.items.forEach(item => {
-                          item.sendCommand(commandToExecute); 
+                          item.sendCommand(commandToExecute);
                       });
                   }
                   return new EvaluationResult(true, result.remainingTokens, executeFunction, result.executeParameter);
@@ -214,7 +215,7 @@ actions:
            * The found item can be included in the final execution parameter, e.g. to send a command to that item.
            * @param {boolean} includeInExecuteParameter   Default: true.
            * @param {boolean} isGroup                     Default: false. If true, only group items (type: "Group") are matched.
-           * @returns 
+           * @returns
            */
           function itemLabel(includeInExecuteParameter, isGroup) {return new ItemLabelExp(includeInExecuteParameter, isGroup);}
           class ItemLabelExp extends Expression {
@@ -229,10 +230,10 @@ actions:
               }
 
               evaluate(tokens) {
-                  console.debug("eval item label with tokens: " + stringify(tokens))
+                  logger.debug("eval item label with tokens: " + stringify(tokens))
 
                   if (tokens.length < 1) {
-                      console.debug("no tokens, eval item label fail")
+                      logger.debug("no tokens, eval item label fail")
                       return new EvaluationResult(false, tokens, null, null);
                   }
 
@@ -244,11 +245,11 @@ actions:
                   let matchResult = getItemByLabelOrSynonym(remainingItems, tokens);
 
                   if (!matchResult) {
-                      console.debug("eval item label fail");
+                      logger.debug("eval item label fail");
                       return new EvaluationResult(false, tokens, null, null);
                   }
 
-                  console.debug("eval item label success")
+                  logger.debug("eval item label success")
                   let groupItem = null;
                   if (this.isGroup) {
                       groupItem = matchResult.matchedItem;
@@ -276,9 +277,9 @@ actions:
           function itemProperties(expression, tags, groupRequired, itemType) {return new ItemPropertiesExp(expression, tags, groupRequired, itemType);}
           class ItemPropertiesExp extends Expression {
               /**
-               * @param {Expression} expression 
-               * @param {string[]} tags 
-               * @param {boolean} groupRequired 
+               * @param {Expression} expression
+               * @param {string[]} tags
+               * @param {boolean} groupRequired
                * @param {string} itemType
                */
               constructor(expression, tags, groupRequired, itemType) {
@@ -290,43 +291,43 @@ actions:
               }
 
               evaluate(tokens) {
-                  console.debug("eval item properties with tokens: " + stringify(tokens))
+                  logger.debug("eval item properties with tokens: " + stringify(tokens))
 
                   if (tokens.length < 1) {
-                      console.debug("no tokens, eval item properties fail")
+                      logger.info("no tokens, eval item properties fail")
                       return new EvaluationResult(false, tokens, null, null);
                   }
 
                   let expResult = evaluateExpressionOrString(this.value, tokens.slice());
                   if (!expResult.success) {
-                      console.debug("eval item properties: inner expression eval fail");
+                      logger.info("eval item properties: inner expression eval fail");
                       return new EvaluationResult(false, tokens, null, null);
                   }
 
                   if (this.groupRequired && expResult.groupItem == null) {
-                      console.debug("eval item properties fail: group required but not found");
+                      logger.info("eval item properties fail: group required but not found");
                       return new EvaluationResult(false, tokens, null, null);
                   }
 
-                  console.debug("eval item properties: search items");
+                  logger.debug("eval item properties: search items");
 
                   let remainingItems = null;
                   if (this.tags.length == 0) {
                       remainingItems = items.getItems();
-                      console.debug("eval item properties: get all items");
+                      logger.debug("eval item properties: get all items");
                   } else {
                       remainingItems = items.getItemsByTag(...this.tags);
-                      console.debug("eval item properties: filter items by tags: " + this.tags + "; remaining: " + remainingItems.length);
+                      logger.debug("eval item properties: filter items by tags: " + this.tags + "; remaining: " + remainingItems.length);
                   }
 
                   if (this.itemType != null) {
                       remainingItems = remainingItems.filter(item => item.type == this.itemType);
-                      console.debug("eval item properties: filter items by type: " + this.itemType + "; remaining: " + remainingItems.length);
+                      logger.debug("eval item properties: filter items by type: " + this.itemType + "; remaining: " + remainingItems.length);
                   }
 
                   if (this.groupRequired) {
                       remainingItems = remainingItems.filter(item => itemIsInSubGroup(item, expResult.groupItem));
-                      console.debug("eval item properties: filter items by group: " + expResult.groupItem.name + "; remaining: " + remainingItems.length);
+                      logger.debug("eval item properties: filter items by group: " + expResult.groupItem.name + "; remaining: " + remainingItems.length);
                   }
 
                   if (!expResult.executeParameter) {
@@ -344,12 +345,12 @@ actions:
 
           class EvaluationResult {
               /**
-               * 
+               *
                * @param {boolean} success             if evaluation was successful or not
-               * @param {string[]} remainingTokens 
-               * @param {function} executeFunction    the function to execute in the end 
+               * @param {string[]} remainingTokens
+               * @param {function} executeFunction    the function to execute in the end
                * @param {object} executeParameter     the parameter inserted in the executeFunction. Should be a single object that can hold multiple parameters in its key/value pairs.
-               * @param {object} groupItem 
+               * @param {object} groupItem
                */
               constructor(success, remainingTokens, executeFunction, executeParameter, groupItem) {
                   this.success = success;
@@ -372,7 +373,7 @@ actions:
               /**
                * Adds a rule.
                * Either the expression must contain a function to execute (e.g. send a command) or a specific function must be given.
-               * @param {Expression} expression 
+               * @param {Expression} expression
                * @param {function} executeFunction    If a specific function is given, it will override any function from the expression.
                */
               addRule(expression, executeFunction) {
@@ -391,8 +392,8 @@ actions:
 
               /**
                * Tries to interpret the given utterance by matching all saved rules.
-               * @param {string} utterance 
-               * @returns 
+               * @param {string} utterance
+               * @returns
                */
               interpretUtterance(utterance) {
                   if (!utterance) {
@@ -402,36 +403,32 @@ actions:
                   var normalizedUtterance = normalizeUtterance(utterance);
                   var tokens = tokenizeUtterance(normalizedUtterance);
 
-                  console.debug("input normalized utterance: " + normalizedUtterance);
-                  console.debug("input tokens: " + stringify(tokens));
+                  logger.debug("input normalized utterance: " + normalizedUtterance);
+                  logger.debug("input tokens: " + stringify(tokens));
 
                   for (var index = 0; index < this.rules.length; index++) {
-                      console.debug("check rule " + index);
+                      logger.debug("check rule " + index);
                       var rule = this.rules[index];
-                      console.debug(stringify(rule));
+                      logger.debug(stringify(rule));
                       var result = evaluateExpressionOrString(rule.expression, tokens.slice());
                       if (result.success) {
                           var executeFunction = result.executeFunction || rule.executeFunction;
                           if (!executeFunction) {
-                              console.debug("rule matched, but no function to execute found, continue");
+                              logger.debug("rule matched, but no function to execute found, continue");
                               continue;
                           }
 
-                          console.debug("execute function with parameters: " + stringify(result.executeParameter.items));  
                           executeFunction(result.executeParameter);
                           break;
                       }
-                  }        
+                  }
               }
-
-
-
           }
 
           /**
-           * 
-           * @param {Expression} expression 
-           * @param {string[]} tokens 
+           *
+           * @param {Expression} expression
+           * @param {string[]} tokens
            * @returns {EvaluationResult}
            */
           function evaluateExpressionOrString(expression, tokens) {
@@ -451,10 +448,10 @@ actions:
                   return new EvaluationResult(false, tokens, null, null);
               }
 
-              console.debug("eval string: " + expression)
-              console.debug("token: " + tokens[0]);
+              logger.debug("eval string: " + expression)
+              logger.debug("token: " + tokens[0]);
               var hasMatch = tokens[0] === expression; //tokens[0].match(expression) != null;
-              console.debug("hasMatch: " + hasMatch)
+              logger.debug("hasMatch: " + hasMatch)
               return new EvaluationResult(hasMatch, tokens.slice(1), null, null);
           }
 
@@ -578,15 +575,15 @@ actions:
 
                   matchResult = checkSynonyms(allItems.slice());
 
-                  console.debug("get item by label: found matched synonyms: " + matchResult.remainingItems.length);
+                  logger.debug("get item by label: found matched synonyms: " + matchResult.remainingItems.length);
               }
 
               if (matchResult.remainingItems.length == 1) {
-                  console.debug("get item by label: success");
+                  logger.debug("get item by label: success");
                   return {matchedItem: matchResult.remainingItems[0].item, remainingTokens: tokens.slice(matchResult.tokenIndex)};
               }
 
-              console.debug("get item by label: fail");
+              logger.info("get item by label: fail");
               return null;
           }
 
@@ -630,7 +627,6 @@ actions:
                           checkedGroupNames.push(groupName);
                           groupStack.push(items.getItem(groupName));
                       }
-
                   });
               }
 
