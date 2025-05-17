@@ -50,8 +50,8 @@ actions:
           function alt(...expressions) {return new AlternativeExp(...expressions);}
           class AlternativeExp extends Expression {
               /**
-              * @param  {...Expression} expressions
-              */
+               * @param  {...Expression} expressions
+               */
               constructor(...expressions) {
                   super();
                   this.value = expressions;
