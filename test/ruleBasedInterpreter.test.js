@@ -6,6 +6,10 @@ openhab.items = {
     getItemsByTag: jest.fn().mockReturnValue([]),
     getItem: jest.fn().mockReturnValue(null)
 };
+openhab.log = jest.fn().mockReturnValue({
+    info: console.log,
+    debug: console.debug
+});
 const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties } = require("../lib/openHAB/ruleBasedInterpreter");
 
 let rbi = new RuleBasedInterpreter();
