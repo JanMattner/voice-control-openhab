@@ -393,7 +393,7 @@ actions:
               /**
                * Tries to interpret the given utterance by matching all saved rules.
                * @param {string} utterance
-               * @returns
+               * @returns {EvaluationResult}
                */
               interpretUtterance(utterance) {
                   if (!utterance) {
@@ -402,6 +402,7 @@ actions:
 
                   var normalizedUtterance = normalizeUtterance(utterance);
                   var tokens = tokenizeUtterance(normalizedUtterance);
+                  var result = new EvaluationResult(false, tokens, null);
 
                   logger.debug("input normalized utterance: " + normalizedUtterance);
                   logger.debug("input tokens: " + stringify(tokens));
@@ -410,7 +411,7 @@ actions:
                       logger.debug("check rule " + index);
                       var rule = this.rules[index];
                       logger.debug(stringify(rule));
-                      var result = evaluateExpressionOrString(rule.expression, tokens.slice());
+                      result = evaluateExpressionOrString(rule.expression, tokens.slice());
                       if (result.success) {
                           var executeFunction = result.executeFunction || rule.executeFunction;
                           if (!executeFunction) {
@@ -422,6 +423,8 @@ actions:
                           break;
                       }
                   }
+
+                  return result;
               }
           }
 
@@ -642,7 +645,7 @@ actions:
           let rbi = new RuleBasedInterpreter();
 
           function interpretUtterance(utterance) {
-              rbi.interpretUtterance(utterance);
+              return JSON.stringify(rbi.interpretUtterance(utterance));
           }
 
           // ** ENGLISH **************************
