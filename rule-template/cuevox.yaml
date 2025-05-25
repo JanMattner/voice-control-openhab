@@ -189,7 +189,7 @@ actions:
 
                   let commandToExecute = this.command;
 
-                  var executeFunction = function(parameter) {
+                  var sendCommand = function(parameter) {
                       if (!parameter || typeof(parameter) != "object") {
                           logger.info("Trying to send a command, but no proper object parameter found")
                           return;
@@ -203,8 +203,8 @@ actions:
                       parameter.items.forEach(item => {
                           item.sendCommand(commandToExecute);
                       });
-                  }
-                  return new EvaluationResult(true, result.remainingTokens, executeFunction, result.executeParameter);
+                  };
+                  return new EvaluationResult(true, result.remainingTokens, sendCommand, result.executeParameter);
               }
           }
 
@@ -361,6 +361,24 @@ actions:
               }
           }
 
+          class AnnotationResult {
+             /**
+              *
+              * @param {boolean} success             if evaluation was successful or not
+              * @param {string} input                the original user input
+              * @param {string[]} remainingTokens
+              * @param {string} executeFunction      the function name or its source
+              * @param {object} executeParameter     the parameter inserted in the executeFunction. Should be a single object that can hold multiple parameters in its key/value pairs.
+              */
+              constructor(success, input, remainingTokens, executeFunction, executeParameter) {
+                  this.success = success;
+                  this.input = input || [];
+                  this.remainingTokens = remainingTokens || [];
+                  this.executeFunction = executeFunction;
+                  this.executeParameter = executeParameter;
+              }
+          }
+
           class RuleBasedInterpreter {
               constructor() {
                   this.rules = [];
@@ -393,7 +411,7 @@ actions:
               /**
                * Tries to interpret the given utterance by matching all saved rules.
                * @param {string} utterance
-               * @returns {EvaluationResult}
+               * @returns {AnnotationResult}
                */
               interpretUtterance(utterance) {
                   if (!utterance) {
@@ -424,8 +442,37 @@ actions:
                       }
                   }
 
-                  return result;
+                  return annotateResult(result, normalizedUtterance);
               }
+          }
+
+          /**
+          * Convert EvaluationResult to AnnotationResult
+          * @param {EvaluationResult} result
+          * @param {string[]} inputTokens
+          * @returns {AnnotationResult}
+          */
+          function annotateResult(result, inputTokens) {
+              var annotation = new AnnotationResult(
+                  result.success,
+                  inputTokens,
+                  result.remainingTokens,
+                  "",
+                  result.executeParameter
+              );
+
+              if(!result.executeFunction) {
+                  return annotation;
+              }
+
+              if(!result.executeFunction.name) {
+                  annotation.executeFunction = result.executeFunction.toString();
+              }
+              else {
+                  annotation.executeFunction = result.executeFunction.name;
+              }
+
+              return annotation;
           }
 
           /**
