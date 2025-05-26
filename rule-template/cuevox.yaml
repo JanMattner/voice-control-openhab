@@ -192,17 +192,19 @@ actions:
                   var sendCommand = function(parameter) {
                       if (!parameter || typeof(parameter) != "object") {
                           logger.info("Trying to send a command, but no proper object parameter found")
-                          return;
+                          return false;
                       }
 
                       if (!parameter.items) {
                           logger.info("Trying to send a command, but no items parameter found")
-                          return;
+                          return false;
                       }
 
                       parameter.items.forEach(item => {
                           item.sendCommand(commandToExecute);
                       });
+
+                      return true;
                   };
                   return new EvaluationResult(true, result.remainingTokens, sendCommand, result.executeParameter);
               }
@@ -414,13 +416,15 @@ actions:
                * @returns {AnnotationResult}
                */
               interpretUtterance(utterance) {
+                  var result = new EvaluationResult(false, [], null);
+
                   if (!utterance) {
-                      return;
+                      return result;
                   }
 
                   var normalizedUtterance = normalizeUtterance(utterance);
                   var tokens = tokenizeUtterance(normalizedUtterance);
-                  var result = new EvaluationResult(false, tokens, null);
+                  var result.remainingTokens = tokens;
 
                   logger.debug("input normalized utterance: " + normalizedUtterance);
                   logger.debug("input tokens: " + stringify(tokens));
@@ -437,7 +441,7 @@ actions:
                               continue;
                           }
 
-                          executeFunction(result.executeParameter);
+                          result.success = executeFunction(result.executeParameter);
                           break;
                       }
                   }
