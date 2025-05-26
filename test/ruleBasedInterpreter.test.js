@@ -7,8 +7,16 @@ openhab.items = {
     getItem: jest.fn().mockReturnValue(null)
 };
 openhab.log = jest.fn().mockReturnValue({
+    /* Uncomment to get logs during test execution
     info: console.log,
-    debug: console.debug
+    debug: console.debug,
+    warn: console.warn
+    //*/
+    ///* Comment to get logs during test execution
+    info: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn()
+    //*/
 });
 const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties } = require("../lib/openHAB/ruleBasedInterpreter");
 
@@ -17,10 +25,6 @@ let rbi = new RuleBasedInterpreter();
 beforeEach(() => {
     rbi.clearRules();
     openhab.items.getItems.mockReturnValue([]);
-    global.console = {
-        debug: jest.fn(),
-        info: jest.fn()
-    }
 });
 
 describe("interpretUtterance", () => {
@@ -73,12 +77,12 @@ describe("interpretUtterance", () => {
 
     describe("item properties expression", () => {
         it("sends command to found items by single tag", () => {
-            let item1 = {sendCommand: jest.fn()};
-            let item2 = {sendCommand: jest.fn()};
-            let item3 = {sendCommand: jest.fn()};
-            let item4 = {sendCommand: jest.fn()};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
-            when(openhab.items.getItemsByTag).calledWith(...["bar"]).mockReturnValue([item1, item3]);
+            let itemOne = {sendCommand: jest.fn()};
+            let itemTwo = {sendCommand: jest.fn()};
+            let itemThree = {sendCommand: jest.fn()};
+            let itemFour = {sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree, itemFour]);
+            when(openhab.items.getItemsByTag).calledWith(...["bar"]).mockReturnValue([itemOne, itemThree]);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties("something", ["bar"], false),cmd("works", cmdParameter));
@@ -87,23 +91,23 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("something works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item4.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemFour.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by multiple tags", () => {
-            let item1 = {sendCommand: jest.fn()};
-            let item2 = {sendCommand: jest.fn()};
-            let item3 = {sendCommand: jest.fn()};
-            let item4 = {sendCommand: jest.fn()};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([item1, item3]);
+            let itemOne = {sendCommand: jest.fn()};
+            let itemTwo = {sendCommand: jest.fn()};
+            let itemThree = {sendCommand: jest.fn()};
+            let itemFour = {sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree, itemFour]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([itemOne, itemThree]);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties("something", ["foo", "bar"], false),cmd("works", cmdParameter));
@@ -112,22 +116,22 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("something works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item4.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemFour.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by type", () => {
-            let item1 = {type: "foobar", sendCommand: jest.fn()};
-            let item2 = {type: "foo", sendCommand: jest.fn()};
-            let item3 = {type: "bar", sendCommand: jest.fn()};
-            let item4 = {type: "foo", sendCommand: jest.fn()};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
+            let itemOne = {type: "foobar", sendCommand: jest.fn()};
+            let itemTwo = {type: "foo", sendCommand: jest.fn()};
+            let itemThree = {type: "bar", sendCommand: jest.fn()};
+            let itemFour = {type: "foo", sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree, itemFour]);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties("something", null, false, "foo"),cmd("works", cmdParameter));
@@ -136,23 +140,23 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("something works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item2.sendCommand.mock.calls.length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item1.sendCommand.mock.calls.length).toBe(0);
-            expect(item4.sendCommand.mock.calls.length).toBe(1);
-            expect(item4.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item4.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(0);
+            expect(itemFour.sendCommand.mock.calls.length).toBe(1);
+            expect(itemFour.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemFour.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by type and tags", () => {
-            let item1 = {type: "foobar", sendCommand: jest.fn()};
-            let item2 = {type: "foo", sendCommand: jest.fn()};
-            let item3 = {type: "bar", sendCommand: jest.fn()};
-            let item4 = {type: "foo", sendCommand: jest.fn()};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3, item4]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([item1, item2]);
+            let itemOne = {type: "foobar", sendCommand: jest.fn()};
+            let itemTwo = {type: "foo", sendCommand: jest.fn()};
+            let itemThree = {type: "bar", sendCommand: jest.fn()};
+            let itemFour = {type: "foo", sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree, itemFour]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo", "bar"]).mockReturnValue([itemOne, itemTwo]);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties("something", ["foo", "bar"], false, "foo"),cmd("works", cmdParameter));
@@ -161,141 +165,141 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("something works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item2.sendCommand.mock.calls.length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item1.sendCommand.mock.calls.length).toBe(0);
-            expect(item4.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(0);
+            expect(itemFour.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by direct location and tag", () => {
-            let item1 = {name: "item1", label: "item1", groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", groupNames: ["itemTwo"], sendCommand: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([itemOne, itemThree]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item2 works");
+            rbi.interpretUtterance("something itemTwo works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by sub location and tag", () => {
-            let item1 = {name: "item1", label: "item1", groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", groupNames: ["itemTwo"], sendCommand: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([itemOne]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item3 works");
+            rbi.interpretUtterance("something itemThree works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by sub location and tag and type", () => {
-            let item1 = {name: "item1", label: "item1", type: "foobar", groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", type: "foobar", groupNames: ["itemTwo"], sendCommand: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([itemOne]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true, "foobar"),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item3 works");
+            rbi.interpretUtterance("something itemThree works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends command to found items by self location and tag", () => {
-            let item1 = {name: "item1", label: "item1", type: "Group", groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", type: "Group", groupNames: ["itemTwo"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([itemOne, itemThree]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item1 works");
+            rbi.interpretUtterance("something itemOne works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("sends no command if items are not in location", () => {
-            let item1 = {name: "item1", label: "item1", type: "Switch", groupNames: ["item2"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn(), getMetadata: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", type: "Switch", groupNames: ["itemTwo"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn(), getMetadata: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([item1, item3]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["foo"]).mockReturnValue([itemOne, itemThree]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let cmdParameter = 123;
             let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item1 works");
+            rbi.interpretUtterance("something itemOne works");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(0);
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(0);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
 
         it("turns lights on in location", () => {
-            let item1 = {name: "item1", label: "item1", type: "Switch", groupNames: ["item2"], sendCommand: jest.fn()};
-            let item2 = {name: "item2", label: "item2", type: "Group", groupNames: ["item3"], sendCommand: jest.fn()};
-            let item3 = {name: "item3", label: "item3", type: "Group", groupNames: [], sendCommand: jest.fn()};
+            let itemOne = {name: "itemOne", label: "itemOne", type: "Switch", groupNames: ["itemTwo"], sendCommand: jest.fn()};
+            let itemTwo = {name: "itemTwo", label: "itemTwo", type: "Group", groupNames: ["itemThree"], sendCommand: jest.fn()};
+            let itemThree = {name: "itemThree", label: "itemThree", type: "Group", groupNames: [], sendCommand: jest.fn()};
             
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
-            when(openhab.items.getItemsByTag).calledWith(...["Light"]).mockReturnValue([item1]);
-            when(openhab.items.getItem).calledWith("item2").mockReturnValue(item2);
-            when(openhab.items.getItem).calledWith("item3").mockReturnValue(item3);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
+            when(openhab.items.getItemsByTag).calledWith(...["Light"]).mockReturnValue([itemOne]);
+            when(openhab.items.getItem).calledWith("itemTwo").mockReturnValue(itemTwo);
+            when(openhab.items.getItem).calledWith("itemThree").mockReturnValue(itemThree);
             
             let onOff = alt(cmd("on", "ON"), cmd("off", "OFF"));
             let turn = alt("turn", "switch");
@@ -318,22 +322,22 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("turn on all the lights in item3");
+            rbi.interpretUtterance("turn on all the lights in itemThree");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe("ON");
-            expect(item2.sendCommand.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(0);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe("ON");
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(0);
         });
     });
 
     describe("item expression", () => {
         it("sends command to found item by label", () => {
-            let item1 = {label: "item one", sendCommand: jest.fn()};
-            let item2 = {label: "item two", sendCommand: jest.fn()};
-            let item3 = {label: "third item", sendCommand: jest.fn()};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            let itemOne = {label: "item one", sendCommand: jest.fn()};
+            let itemTwo = {label: "item two", sendCommand: jest.fn()};
+            let itemThree = {label: "third item", sendCommand: jest.fn()};
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
             
             let cmdParameter = 123;
             let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
@@ -342,21 +346,21 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("item one foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
             rbi.interpretUtterance("item two foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item2.sendCommand.mock.calls.length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
             rbi.interpretUtterance("third item foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
         });
 
         it("sends command to found item by synonym", () => {
@@ -370,13 +374,13 @@ describe("interpretUtterance", () => {
                 return {value: data};
             };
 
-            let item1 = {label: firstName, sendCommand: jest.fn(),
+            let itemOne = {label: firstName, sendCommand: jest.fn(),
                 getMetadata: jest.fn(getMetadataImplementation("bar one, barbar"))};
-            let item2 = {label: secondName, sendCommand: jest.fn(),
+            let itemTwo = {label: secondName, sendCommand: jest.fn(),
                 getMetadata: jest.fn(getMetadataImplementation("second bar"))};
-            let item3 = {label: thirdName, sendCommand: jest.fn(),
+            let itemThree = {label: thirdName, sendCommand: jest.fn(),
                 getMetadata: jest.fn(getMetadataImplementation("bar three"))};
-            openhab.items.getItems.mockReturnValue([item1, item2, item3]);
+            openhab.items.getItems.mockReturnValue([itemOne, itemTwo, itemThree]);
 
             let cmdParameter = 123;
             let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
@@ -385,27 +389,27 @@ describe("interpretUtterance", () => {
             
             rbi.interpretUtterance("bar one foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
             rbi.interpretUtterance("barbar foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item1.sendCommand.mock.calls.length).toBe(2);
-            expect(item1.sendCommand.mock.calls[1].length).toBe(1);
-            expect(item1.sendCommand.mock.calls[1][0]).toBe(cmdParameter);
+            expect(itemOne.sendCommand.mock.calls.length).toBe(2);
+            expect(itemOne.sendCommand.mock.calls[1].length).toBe(1);
+            expect(itemOne.sendCommand.mock.calls[1][0]).toBe(cmdParameter);
 
             rbi.interpretUtterance("second bar foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item2.sendCommand.mock.calls.length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
             rbi.interpretUtterance("bar three foo");
             expect(testFunction.mock.calls.length).toBe(0);
-            expect(item3.sendCommand.mock.calls.length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0].length).toBe(1);
-            expect(item3.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(itemThree.sendCommand.mock.calls.length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
+            expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
         });
     });
 
@@ -455,6 +459,22 @@ describe("interpretUtterance", () => {
             rbi.interpretUtterance("foo foobar");
             expect(testFunction.mock.calls.length).toBe(0);
         });
+
+        it("matches normalized unicode characters and apostrophes", () => {
+            let testExpression = seq("tÈS$Tö'ó");
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            rbi.interpretUtterance("2TèstÖ'Ó");
+            expect(testFunction.mock.calls.length).toBe(1);
+        });
+
+        it("matches first token and ignores further", () => {
+            let testExpression = seq("foo bar");
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            rbi.interpretUtterance("foo abc");
+            expect(testFunction.mock.calls.length).toBe(1);
+        });
     });
 
     describe("single string expression", () => {
@@ -473,6 +493,14 @@ describe("interpretUtterance", () => {
             rbi.interpretUtterance("fo");
             expect(testFunction.mock.calls.length).toBe(0);
             rbi.interpretUtterance("fooo");
+            expect(testFunction.mock.calls.length).toBe(0);
+            rbi.interpretUtterance("fo'o");
+            expect(testFunction.mock.calls.length).toBe(0);
+            rbi.interpretUtterance("foo'");
+            expect(testFunction.mock.calls.length).toBe(0);
+            rbi.interpretUtterance("fooö");
+            expect(testFunction.mock.calls.length).toBe(0);
+            rbi.interpretUtterance("fooò");
             expect(testFunction.mock.calls.length).toBe(0);
         });
         
