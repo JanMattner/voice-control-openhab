@@ -10,7 +10,7 @@ openhab.log = jest.fn().mockReturnValue({
     info: console.log,
     debug: console.debug
 });
-const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties } = require("../lib/openHAB/ruleBasedInterpreter");
+const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties, annotateResult, EvaluationResult} = require("../lib/openHAB/ruleBasedInterpreter");
 
 let rbi = new RuleBasedInterpreter();
 
@@ -41,7 +41,8 @@ describe("interpretUtterance", () => {
             let testExpression = alt("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("fob");
+            var result = rbi.interpretUtterance("fob");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
     });
@@ -51,7 +52,8 @@ describe("interpretUtterance", () => {
             let testExpression = cmd("foo", 1);
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("foo");
+            var result = rbi.interpretUtterance("foo");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
 
@@ -63,7 +65,8 @@ describe("interpretUtterance", () => {
             let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("my item foo");
+            var result = rbi.interpretUtterance("my item foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(retItem.sendCommand.mock.calls.length).toBe(1);
             expect(retItem.sendCommand.mock.calls[0].length).toBe(1);
@@ -85,7 +88,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something works");
+            var result = rbi.interpretUtterance("something works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -110,7 +114,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something works");
+            var result = rbi.interpretUtterance("something works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -134,7 +139,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something works");
+            var result = rbi.interpretUtterance("something works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item2.sendCommand.mock.calls.length).toBe(1);
             expect(item2.sendCommand.mock.calls[0].length).toBe(1);
@@ -159,7 +165,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something works");
+            var result = rbi.interpretUtterance("something works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item2.sendCommand.mock.calls.length).toBe(1);
             expect(item2.sendCommand.mock.calls[0].length).toBe(1);
@@ -184,7 +191,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item2 works");
+            var result = rbi.interpretUtterance("something item2 works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -208,7 +216,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item3 works");
+            var result = rbi.interpretUtterance("something item3 works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -232,7 +241,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item3 works");
+            var result = rbi.interpretUtterance("something item3 works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -256,7 +266,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item1 works");
+            var result = rbi.interpretUtterance("something item1 works");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -280,7 +291,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("something item1 works");
+            var result = rbi.interpretUtterance("something item1 works");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(0);
             expect(item2.sendCommand.mock.calls.length).toBe(0);
@@ -318,7 +330,8 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("turn on all the lights in item3");
+            var result = rbi.interpretUtterance("turn on all the lights in item3");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
@@ -340,19 +353,22 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("item one foo");
+            var result = rbi.interpretUtterance("item one foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
             expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
-            rbi.interpretUtterance("item two foo");
+            result = rbi.interpretUtterance("item two foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item2.sendCommand.mock.calls.length).toBe(1);
             expect(item2.sendCommand.mock.calls[0].length).toBe(1);
             expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
-            rbi.interpretUtterance("third item foo");
+            result = rbi.interpretUtterance("third item foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item3.sendCommand.mock.calls.length).toBe(1);
             expect(item3.sendCommand.mock.calls[0].length).toBe(1);
@@ -383,25 +399,29 @@ describe("interpretUtterance", () => {
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
             
-            rbi.interpretUtterance("bar one foo");
+            var result = rbi.interpretUtterance("bar one foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(1);
             expect(item1.sendCommand.mock.calls[0].length).toBe(1);
             expect(item1.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
-            rbi.interpretUtterance("barbar foo");
+            result = rbi.interpretUtterance("barbar foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item1.sendCommand.mock.calls.length).toBe(2);
             expect(item1.sendCommand.mock.calls[1].length).toBe(1);
             expect(item1.sendCommand.mock.calls[1][0]).toBe(cmdParameter);
 
-            rbi.interpretUtterance("second bar foo");
+            result = rbi.interpretUtterance("second bar foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item2.sendCommand.mock.calls.length).toBe(1);
             expect(item2.sendCommand.mock.calls[0].length).toBe(1);
             expect(item2.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
-            rbi.interpretUtterance("bar three foo");
+            result = rbi.interpretUtterance("bar three foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(0);
             expect(item3.sendCommand.mock.calls.length).toBe(1);
             expect(item3.sendCommand.mock.calls[0].length).toBe(1);
@@ -413,10 +433,13 @@ describe("interpretUtterance", () => {
         it("matches same or none string", () => {
             let testExpression = seq(opt("bar"), "foo");
             let testFunction = jest.fn();
+            testFunction.mockReturnValue(true);
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("foo");
+            var result = rbi.interpretUtterance("foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(1);
-            rbi.interpretUtterance("bar foo");
+            result = rbi.interpretUtterance("bar foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(2);
         });
 
@@ -424,17 +447,21 @@ describe("interpretUtterance", () => {
             let testExpression = seq(opt("bar"), "foo");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("other foo");
+            var result = rbi.interpretUtterance("other foo");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
-            rbi.interpretUtterance("bar bar foo");
+            result = rbi.interpretUtterance("bar bar foo");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
 
         it("is successful at the end when no tokens are left", () => {
             let testExpression = seq("first", alt("second", opt("foo")), opt("bar"));
             let testFunction = jest.fn();
+            testFunction.mockReturnValue(true);
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("first second");
+            var result = rbi.interpretUtterance("first second");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(1);
         });
     });
@@ -443,8 +470,10 @@ describe("interpretUtterance", () => {
         it("matches correct sequence", () => {
             let testExpression = seq("bar", "foo", "foobar");
             let testFunction = jest.fn();
+            testFunction.mockReturnValue(true);
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("bar foo foobar");
+            var result = rbi.interpretUtterance("bar foo foobar");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(1);
         });
 
@@ -452,7 +481,8 @@ describe("interpretUtterance", () => {
             let testExpression = seq("bar", "foo", "foobar");
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("foo foobar");
+            var result = rbi.interpretUtterance("foo foobar");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
     });
@@ -461,8 +491,10 @@ describe("interpretUtterance", () => {
         it("matches same string and executes rule function", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
+            testFunction.mockReturnValue(true);
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("foo");
+            var result = rbi.interpretUtterance("foo");
+            expect(result.success).toBe(true);
             expect(testFunction.mock.calls.length).toBe(1);
         });
 
@@ -470,9 +502,11 @@ describe("interpretUtterance", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("fo");
+            var result = rbi.interpretUtterance("fo");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
-            rbi.interpretUtterance("fooo");
+            result = rbi.interpretUtterance("fooo");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
         
@@ -480,7 +514,8 @@ describe("interpretUtterance", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("bar");
+            var result = rbi.interpretUtterance("bar");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
         
@@ -488,7 +523,8 @@ describe("interpretUtterance", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance("");
+            var result = rbi.interpretUtterance("");
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
         
@@ -496,7 +532,8 @@ describe("interpretUtterance", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance(null);
+            var result = rbi.interpretUtterance(null);
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
         });
         
@@ -504,8 +541,33 @@ describe("interpretUtterance", () => {
             let testExpression = "foo";
             let testFunction = jest.fn();
             rbi.addRule(testExpression, testFunction);
-            rbi.interpretUtterance(undefined);
+            var result = rbi.interpretUtterance(undefined);
+            expect(result.success).toBe(false);
             expect(testFunction.mock.calls.length).toBe(0);
+        });
+    });
+});
+
+describe("AnnotationResult", () => {
+    describe("convert EvaluationResult", () => {
+        it("executeFunction not set", () => {
+            let result = annotateResult(new EvaluationResult(false, [], null, null), "");
+            expect(result.executeFunction).toBe("");
+        });
+
+        it("executeFunction name not set", () => {
+            let testFunction = function() {
+
+            };
+            let result = annotateResult(new EvaluationResult(false, [], testFunction, null), "");
+            expect(result.executeFunction).toBe("testFunction");
+        });
+
+        it("executeFunction name", () => {
+            let result = annotateResult(new EvaluationResult(
+                false, [], function () { }, null),
+            "");
+            expect(result.executeFunction).not.toBe("")
         });
     });
 });
