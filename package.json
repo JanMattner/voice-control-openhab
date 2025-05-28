@@ -8,7 +8,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "jest"
+    "test": "export NODE_ENV=test || set NODE_ENV=test && jest"
   },
   "author": "Jan Mattner",
   "license": "MIT",
