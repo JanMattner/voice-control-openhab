@@ -487,6 +487,36 @@ describe("interpretUtterance", () => {
         });
     });
 
+    describe("annotation result", () => {
+        it("calls function after match but returns unsuccessful if function fails", () => {
+            let testExpression = seq("bar", "foo", "foobar");
+            let testFunction = jest.fn();
+            testFunction.mockReturnValue(false);
+            rbi.addRule(testExpression, testFunction);
+            var result = rbi.interpretUtterance("bar foo foobar");
+            expect(result.success).toBe(false);
+            expect(testFunction.mock.calls.length).toBe(1);
+        });
+
+        it("annotates named function", () => {
+            let testExpression = seq("bar", "foo", "foobar");
+            let testFunction = function(){return true;};
+            rbi.addRule(testExpression, testFunction);
+            var result = rbi.interpretUtterance("bar foo foobar");
+            expect(result.success).toBe(true);
+            expect(result.executeFunction).toBe(testFunction.name);
+        });
+
+        it("annotates anonymous function", () => {
+            let testExpression = seq("bar", "foo", "foobar");
+            rbi.addRule(testExpression, function(myMarkerParam){return true;});
+            var result = rbi.interpretUtterance("bar foo foobar");
+            expect(result.success).toBe(true);
+            expect(result.executeFunction).toContain("return true;");
+            expect(result.executeFunction).toContain("myMarkerParam");
+        });
+    });
+
     describe("single string expression", () => {
         it("matches same string and executes rule function", () => {
             let testExpression = "foo";
