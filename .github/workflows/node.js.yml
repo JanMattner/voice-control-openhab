@@ -39,6 +39,7 @@ jobs:
     - name: Check if YAML changed (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
+      continue-on-error: true
       run: |
         git diff --quiet rule-template/cuevox.yaml
         if ($LASTEXITCODE -ne 0) {
@@ -46,4 +47,6 @@ jobs:
         }
     - name: Emit warning if YAML changed
       if: env.yaml_changed == 'true'
-      run: echo "::error file=rule-template/cuevox.yaml::Check Rule Template YAML, it might contain different scripts."
+      run: |
+        echo "::error file=rule-template/cuevox.yaml::Check Rule Template YAML, it might contain different scripts."
+        exit 1
