@@ -40,7 +40,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        git diff --quiet config.yaml
+        git diff --quiet rule-template/cuevox.yaml
         if ($LASTEXITCODE -ne 0) {
           echo "yaml_changed=true" >> $env:GITHUB_ENV
         }
