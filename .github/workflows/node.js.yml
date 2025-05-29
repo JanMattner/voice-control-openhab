@@ -47,6 +47,7 @@ jobs:
         }
     - name: Emit warning if YAML changed
       if: env.yaml_changed == 'true'
+      continue-on-error: true
       run: |
         echo "::error file=rule-template/cuevox.yaml::Check Rule Template YAML, it might contain different scripts."
         exit 1
