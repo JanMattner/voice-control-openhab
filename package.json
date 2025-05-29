@@ -1,6 +1,6 @@
 {
   "name": "voice-control-openhab",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Simple Rule Based Voice Control for OpenHAB",
   "main": "lib/index.js",
   "type": "commonjs",
@@ -8,7 +8,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "update-yaml": "node scripts/updateYaml.js"
   },
   "author": "Jan Mattner",
   "license": "MIT",
@@ -22,8 +23,7 @@
   "devDependencies": {
     "jest": "^27.1.1",
     "jest-when": "^3.6.0",
+    "js-yaml": "^4.1.0",
     "openhab": "^4.5.1"
-  },
-  "dependencies": {
   }
 }

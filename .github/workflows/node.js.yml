@@ -29,3 +29,11 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm test
+    - name: Run updateYaml script
+      run: npm run update-yaml
+    - name: Check if YAML changed
+      run: |
+        git diff --quiet rule-template/cuevox.yaml || echo "yaml_changed=true" >> $GITHUB_ENV
+    - name: Emit warning if YAML changed
+      if: env.yaml_changed == 'true'
+      run: echo "::warning file=rule-template/cuevox.yaml::Check Rule Template YAML, it might contain different scripts."
