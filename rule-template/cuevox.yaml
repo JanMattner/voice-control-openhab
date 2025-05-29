@@ -23,7 +23,7 @@ actions:
     configuration:
       type: application/javascript
       script: |
-        // test if workflow fails
+
         (function (data) {
 
         // ***
