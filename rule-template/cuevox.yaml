@@ -381,7 +381,7 @@ actions:
              */
             constructor(success, input, remainingTokens, executeFunction, executeParameter) {
                 this.success = success;
-                this.input = input || [];
+                this.input = input || "";
                 this.remainingTokens = remainingTokens || [];
                 this.executeFunction = executeFunction;
                 this.executeParameter = executeParameter;
@@ -460,13 +460,13 @@ actions:
         /**
          * Convert EvaluationResult to AnnotationResult
          * @param {EvaluationResult} result
-         * @param {string[]} inputTokens
+         * @param {string} input
          * @returns {AnnotationResult}
          */
-        function annotateResult(result, inputTokens) {
+        function annotateResult(result, input) {
             var annotation = new AnnotationResult(
                 result.success,
-                inputTokens,
+                input,
                 result.remainingTokens,
                 "",
                 result.executeParameter
