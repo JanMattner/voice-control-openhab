@@ -99,6 +99,8 @@ After checking out this repository, run
 1. `npm install` to install all dependencies and
 2. `npm run test` to run all tests.
 
+Before pushing changes to the repository, run `npm run update-yaml` to automatically update the rule template YAML file.
+
 Note that for development, the [`openhab-js`](https://github.com/openhab/openhab-js) library is installed. It is only used for convenience in mocking/testing and can be omitted in openHAB, as it is available there anyway. Since it relies on an openHAB installation, running and testing the files in this repository is only possible when mocking the `openhab-js` library, otherwise you will encounter errors.
 
 ## License
