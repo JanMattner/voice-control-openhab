@@ -1,4 +1,4 @@
-uid: 'jm:cuevox'
+uid: jm:cuevox
 label: Cuevox - A Rule Based Voice Interpreter
 description: Cuevox is a simple but extensible voice control tool for openHAB. The OH Android App can be used to send voice commands to OH and interpret them using voice command rules that can be easily extended in the rule script.
 configDescriptions:
@@ -41,7 +41,7 @@ actions:
             evaluate(tokens) {
                 return new EvaluationResult(false, tokens);
             }
-            
+
             checkAndNormalizeExpression(expression) {
                 if (typeof expression === 'string') {
                     let tokens = tokenizeUtterance(normalizeString(expression));
