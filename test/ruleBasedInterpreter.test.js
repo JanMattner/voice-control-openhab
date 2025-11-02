@@ -411,6 +411,108 @@ describe("interpretUtterance", () => {
             expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
             expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
         });
+
+        it("prefers the shortest exact matching label when both short and long labels match the utterance", () => {
+            let shortItem = {label: "TV", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let longItem = {label: "TV Room", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            openhab.items.getItems.mockReturnValue([shortItem, longItem]);
+
+            let cmdParameter = 123;
+            let testExpression = seq(itemLabel(), opt("Room"), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            // Both items match the utterance "TV Room foo" (short label "TV" and long label "TV Room").
+            // Shortest exact match ("TV") should be preferred.
+            rbi.interpretUtterance("TV Room foo");
+            expect(shortItem.sendCommand.mock.calls.length).toBe(1);
+            expect(longItem.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("returns no match when multiple items have identical shortest exact labels", () => {
+            let item1 = {label: "TV", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let item2 = {label: "TV", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            openhab.items.getItems.mockReturnValue([item1, item2]);
+
+            let cmdParameter = 123;
+            let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            // Both items have the exact same shortest label -> ambiguous -> no command sent
+            rbi.interpretUtterance("TV foo");
+            expect(item1.sendCommand.mock.calls.length).toBe(0);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("chooses the item with the shortest exact synonym when labels are longer", () => {
+            let getMetadataImplementation = (data) => (namespace) => {
+                if (namespace != "synonyms") {
+                    return null;
+                }
+                return {value: data};
+            };
+
+            let itemShortSyn = {label: "Living Room TV", sendCommand: jest.fn(), getMetadata: jest.fn(getMetadataImplementation("TV"))};
+            let itemOther = {label: "TV Room", sendCommand: jest.fn(), getMetadata: jest.fn(getMetadataImplementation("TV Room"))};
+            openhab.items.getItems.mockReturnValue([itemShortSyn, itemOther]);
+
+            let cmdParameter = 123;
+            let testExpression = seq(itemLabel(), opt("Room"), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            // Utterance "TV Room foo" should match both (synonym "TV" and synonym "TV Room"),
+            // but the shortest exact synonym ("TV") wins -> itemShortSyn should be called.
+            rbi.interpretUtterance("TV Room foo");
+            expect(itemShortSyn.sendCommand.mock.calls.length).toBe(1);
+            expect(itemOther.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("is ambiguous when a label and another item's synonym are equally short exact matches", () => {
+            // item1 has label "TV" (short), item2 has synonym "TV" (short via synonym)
+            let item1 = {label: "TV", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let getMetadataImplementation = (data) => (namespace) => {
+                if (namespace != "synonyms") {
+                    return null;
+                }
+                return {value: data};
+            };
+            let item2 = {label: "Television", sendCommand: jest.fn(), getMetadata: jest.fn(getMetadataImplementation("TV"))};
+            openhab.items.getItems.mockReturnValue([item1, item2]);
+
+            let cmdParameter = 123;
+            let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            // Both provide a shortest exact match of length 1 -> ambiguous -> no command sent
+            rbi.interpretUtterance("TV foo");
+            expect(item1.sendCommand.mock.calls.length).toBe(0);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("handles items missing getMetadata method and still finds shortest match", () => {
+            // item1 has no getMetadata; item2 has a synonym "TV Set" -> item1 should be selected for "TV"
+            let item1 = {label: "TV", sendCommand: jest.fn()}; // No getMetadata
+            let getMetadataImplementation = (data) => (namespace) => {
+                if (namespace != "synonyms") {
+                    return null;
+                }
+                return {value: data};
+            };
+            let item2 = {label: "Television", sendCommand: jest.fn(), getMetadata: jest.fn(getMetadataImplementation("TV Set"))};
+            openhab.items.getItems.mockReturnValue([item1, item2]);
+
+            let cmdParameter = 123;
+            let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            rbi.interpretUtterance("TV foo");
+            expect(item1.sendCommand.mock.calls.length).toBe(1);
+            expect(item2.sendCommand.mock.calls.length).toBe(0);
+        });
     });
 
     describe("optional expression", () => {
