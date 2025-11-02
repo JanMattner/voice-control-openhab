@@ -566,4 +566,60 @@ describe("interpretUtterance", () => {
             expect(testFunction.mock.calls.length).toBe(0);
         });
     });
+
+    describe("itemLabel isGroup behavior", () => {
+        it("matches group when isGroup === true even if non-group shares label", () => {
+            // Both items share the same label; when isGroup === true the group should be selected.
+            let sharedLabel = "shared label";
+            let groupItem = {label: sharedLabel, type: "Group", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let normalItem = {label: sharedLabel, type: "Switch", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            openhab.items.getItems.mockReturnValue([groupItem, normalItem]);
+
+            let cmdParameter = 321;
+            let testExpression = seq(itemLabel(true, true), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            rbi.interpretUtterance(`${sharedLabel} foo`);
+            // Only the group should be considered due to isGroup === true
+            expect(groupItem.sendCommand.mock.calls.length).toBe(1);
+            expect(groupItem.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
+            expect(normalItem.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("is ambiguous (no match) when isGroup === false and duplicate labels exist", () => {
+            // When isGroup === false both normal and group items are considered -> ambiguity -> no match
+            let sharedLabel = "shared label";
+            let groupItem = {label: sharedLabel, type: "Group", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let normalItem = {label: sharedLabel, type: "Switch", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            openhab.items.getItems.mockReturnValue([groupItem, normalItem]);
+
+            let cmdParameter = 456;
+            let testExpression = seq(itemLabel(true, false), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            rbi.interpretUtterance(`${sharedLabel} foo`);
+            // No single exact match should be found -> no sendCommand calls
+            expect(normalItem.sendCommand.mock.calls.length).toBe(0);
+            expect(groupItem.sendCommand.mock.calls.length).toBe(0);
+        });
+
+        it("is ambiguous (no match) when isGroup is omitted (null) and duplicate labels exist", () => {
+            let sharedLabel = "shared label";
+            let groupItem = {label: sharedLabel, type: "Group", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            let normalItem = {label: sharedLabel, type: "Switch", sendCommand: jest.fn(), getMetadata: jest.fn()};
+            openhab.items.getItems.mockReturnValue([groupItem, normalItem]);
+
+            let cmdParameter = 789;
+            let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+
+            rbi.interpretUtterance(`${sharedLabel} foo`);
+            // With omitted isGroup (null) both items are considered -> ambiguity -> no commands
+            expect(normalItem.sendCommand.mock.calls.length).toBe(0);
+            expect(groupItem.sendCommand.mock.calls.length).toBe(0);
+        });
+    });
 });
