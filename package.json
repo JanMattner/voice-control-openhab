@@ -1,6 +1,6 @@
 {
   "name": "voice-control-openhab",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Simple Rule Based Voice Control for OpenHAB",
   "main": "lib/index.js",
   "type": "commonjs",
