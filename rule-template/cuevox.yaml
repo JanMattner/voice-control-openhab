@@ -41,7 +41,7 @@ actions:
             evaluate(tokens) {
                 return new EvaluationResult(false, tokens);
             }
-
+            
             checkAndNormalizeExpression(expression) {
                 if (typeof expression === 'string') {
                     let tokens = tokenizeUtterance(normalizeString(expression));
@@ -235,7 +235,7 @@ actions:
              */
             constructor(includeInExecuteParameter, isGroup) {
                 super();
-                this.isGroup = isGroup ??= null;
+                this.isGroup = isGroup ?? null;
                 this.includeInExecuteParameter = includeInExecuteParameter ??= true;
             }
 
@@ -248,7 +248,8 @@ actions:
                 }
 
                 let remainingItems = items.getItems();
-                if (this.isGroup != null) {
+                // Only filter for groups when explicitly requested (true). If isGroup is false or null, don't filter.
+                if (this.isGroup === true) {
                     remainingItems = remainingItems.filter(item => item.type === "Group");
                 }
 
