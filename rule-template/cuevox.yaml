@@ -89,11 +89,11 @@ actions:
                 logger.debug("eval alt: " + stringify(this.multiExpressions));
                 logger.debug("for tokens: " + stringify(tokens));
 
-                var success = false;
-                var executeFunction = null;
-                var remainingTokens = tokens;
-                var executeParameter = null;
-                let groupItem = null;
+            var success = false;
+            var executeFunction = null;
+            var remainingTokens = tokens;
+            var executeParameter = null;
+            let groupItems = [];
 
                 for (var index = 0; index < this.multiExpressions.length; index++) {
                     var subexp = this.multiExpressions[index];
@@ -103,14 +103,19 @@ actions:
                         success = true;
                         remainingTokens = result.remainingTokens;
                         executeFunction = result.executeFunction || executeFunction;
-                        executeParameter = result.executeParameter || executeParameter;
-                        groupItem = result.groupItem || groupItem;
+                        executeParameter = mergeExecuteParameters(executeParameter, result.executeParameter);
+                        // collect group items from result (support both legacy single groupItem and new groupItems)
+                        if (result.groupItems && result.groupItems.length > 0) {
+                            groupItems = groupItems.concat(result.groupItems);
+                        } else if (result.groupItem) {
+                            groupItems.push(result.groupItem);
+                        }
                         break;
                     }
                 }
 
                 logger.debug("eval alt: " + success)
-                return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter);
+                return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter, groupItems);
             }
         }
 
@@ -124,8 +129,8 @@ actions:
                 logger.debug("eval seq: " + stringify(this.multiExpressions));
                 var success = true;
                 var executeFunction = null;
-                var executeParameter = null;
-                let groupItem = null;
+            var executeParameter = null;
+            let groupItems = [];
 
                 var remainingTokens = tokens.slice();
 
@@ -141,12 +146,17 @@ actions:
 
                     remainingTokens = result.remainingTokens;
                     executeFunction = result.executeFunction || executeFunction;
-                    executeParameter = result.executeParameter || executeParameter;
-                    groupItem = result.groupItem || groupItem;
+                    executeParameter = mergeExecuteParameters(executeParameter, result.executeParameter);
+                    // collect group items from result (support legacy single groupItem)
+                    if (result.groupItems && result.groupItems.length > 0) {
+                        groupItems = groupItems.concat(result.groupItems);
+                    } else if (result.groupItem) {
+                        groupItems.push(result.groupItem);
+                    }
                 }
 
                 logger.debug("eval seq: " + success)
-                return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter, groupItem);
+                return new EvaluationResult(success, remainingTokens, executeFunction, executeParameter, groupItems);
             }
         }
 
@@ -162,7 +172,7 @@ actions:
                 if (result.success) {
                     logger.debug("eval opt success")
                     // only return the reduced token array and other parameters if optional expression was successful.
-                    return new EvaluationResult(true, result.remainingTokens, result.executeFunction, result.executeParameter);
+                    return new EvaluationResult(true, result.remainingTokens, result.executeFunction, result.executeParameter, result.groupItems || []);
                 }
 
                 logger.debug("eval opt fail")
@@ -190,16 +200,17 @@ actions:
 
             evaluate(tokens) {
                 logger.debug("eval cmd: " + stringify(this.singleExpression));
+                logger.debug("eval cmd tokens: " + stringify(tokens));
                 var result = evaluateExpressionOrString(this.singleExpression, tokens);
 
-                logger.debug("eval cmd result: " + result.success)
+                logger.debug("eval cmd result: " + stringify(result));
                 if (!result.success) {
                     return new EvaluationResult(false, tokens, null, null);
                 }
 
                 let commandToExecute = this.command;
 
-                var executeFunction = function(parameter) {
+            var executeFunction = function(parameter) {
                     if (!parameter || typeof(parameter) != "object") {
                         logger.debug("Trying to send a command, but no proper object parameter found")
                         return;
@@ -214,7 +225,9 @@ actions:
                         item.sendCommand(commandToExecute);
                     });
                 }
-                return new EvaluationResult(true, result.remainingTokens, executeFunction, result.executeParameter);
+
+                // Keep result's executeParameter but add our own function
+                return new EvaluationResult(true, result.remainingTokens, executeFunction, result.executeParameter, result.groupItems || []);
             }
         }
 
@@ -227,53 +240,7 @@ actions:
          * @param {boolean} isGroup                     Default: false. If true, only group items (type: "Group") are matched.
          * @returns
          */
-        function itemLabel(includeInExecuteParameter, isGroup) {return new ItemLabelExp(includeInExecuteParameter, isGroup);}
-        class ItemLabelExp extends Expression {
-            /**
-             * @param {boolean} includeInExecuteParameter   Default: true.
-             * @param {boolean} isGroup                  Default: false.
-             */
-            constructor(includeInExecuteParameter, isGroup) {
-                super();
-                this.isGroup = isGroup ?? null;
-                this.includeInExecuteParameter = includeInExecuteParameter ??= true;
-            }
-
-            evaluate(tokens) {
-                logger.debug("eval item label with tokens: " + stringify(tokens))
-
-                if (tokens.length < 1) {
-                    logger.debug("no tokens, eval item label fail")
-                    return new EvaluationResult(false, tokens, null, null);
-                }
-
-                let remainingItems = items.getItems();
-                // Only filter for groups when explicitly requested (true). If isGroup is false or null, don't filter.
-                if (this.isGroup === true) {
-                    remainingItems = remainingItems.filter(item => item.type === "Group");
-                }
-
-                let matchResult = getItemByLabelOrSynonym(remainingItems, tokens);
-
-                if (!matchResult) {
-                    logger.debug("eval item label fail");
-                    return new EvaluationResult(false, tokens, null, null);
-                }
-
-                logger.debug("eval item label success")
-                let groupItem = null;
-                if (this.isGroup) {
-                    groupItem = matchResult.matchedItem;
-                }
-
-                let executeParameter = null;
-                if (this.includeInExecuteParameter) {
-                    executeParameter = {items: [matchResult.matchedItem]};
-                }
-
-                return new EvaluationResult(true, matchResult.remainingTokens, null, executeParameter, groupItem);
-            }
-        }
+        function itemLabel(includeInExecuteParameter, isGroup) {return item({ include: includeInExecuteParameter, type: isGroup ? "Group" : null, matchMultiple: false });}
 
         /**
          * Creates an item properties expression.
@@ -285,73 +252,199 @@ actions:
          * @param {boolean} groupRequired   Default: true. If true, the expression must contain a group Item Label Expression. Only descendants of that group will be matched.
          * @param {string} itemType         Default: null. If a type is given, then only items of that type will be matched.
          */
-        function itemProperties(expression, tags, groupRequired, itemType) {return new ItemPropertiesExp(expression, tags, groupRequired, itemType);}
-        class ItemPropertiesExp extends SingleExpression {
-            /**
-             * @param {Expression} expression
-             * @param {string[]} tags
-             * @param {boolean} groupRequired
-             * @param {string} itemType
-             */
-            constructor(expression, tags, groupRequired, itemType) {
-                super(expression);
-                this.tags = tags ??= [];
-                this.groupRequired = groupRequired ??= true;
-                this.itemType = itemType ??= null;
+        function itemProperties(expression, tags, groupRequired, itemType) {return item({ type: itemType, tag: tags, tagMode: "all", matchMultiple: true }, { expr: expression, groupContext: groupRequired ? "last" : null });}
+
+        /**
+         * Unified item expression implementing label and property based matching.
+         * Options summary:
+         *  - include: whether to include matched items in executeParameter (default true)
+         *  - matchMultiple: whether to allow multiple item matches (default false)
+         *  - type: string or array of types to filter
+         *  - tag: string or array of tags to filter
+         *  - tagMode: "all" | "any" (default "all")
+         * expressionOptions:
+         *  - expr: sub-expression to evaluate instead of label matching
+         *  - groupContext: null | "last" | "one" | "all"
+         */
+        function item(options = {}, expressionOptions = {}) { return new ItemExp(options, expressionOptions); }
+
+        class ItemExp extends Expression {
+            constructor(options = {}, expressionOptions = {}) {
+                super();
+                // options
+                this.include = (options.include === undefined) ? true : options.include;
+                this.matchMultiple = options.matchMultiple ?? false;
+                this.type = options.type ?? null; // string or array
+                this.tag = options.tag ?? options.tag === null ? options.tag : options.tag ?? null; // allow null
+                this.tagMode = options.tagMode ?? "all";
+
+                // expression options
+                this.expr = expressionOptions.expr ? this.checkAndNormalizeExpression(expressionOptions.expr) : null;
+            this.groupContext = expressionOptions.groupContext ?? null; // null | "last" | "one" | "all"
+
+                // basic validation
+                // surface detailed, non-throwing validation warnings
+                if (typeof this.include !== "boolean") {
+                    logger.warn(`item(): 'include' must be boolean - got: ${JSON.stringify(options.include)}`);
+                }
+                if (typeof this.matchMultiple !== "boolean") {
+                    logger.warn(`item(): 'matchMultiple' must be boolean - got: ${JSON.stringify(options.matchMultiple)}`);
+                }
+                if (this.tag != null && !(Array.isArray(this.tag) || typeof this.tag === 'string')) {
+                    logger.warn(`item(): 'tag' must be string or array of strings or null - got: ${JSON.stringify(options.tag)}`);
+                }
+                if (this.type != null && !(Array.isArray(this.type) || typeof this.type === 'string')) {
+                    logger.warn(`item(): 'type' must be string or array of strings or null - got: ${JSON.stringify(options.type)}`);
+                }
+                if (this.tagMode !== "all" && this.tagMode !== "any") {
+                    logger.warn(`item(): 'tagMode' must be 'all' or 'any' - got: ${JSON.stringify(options.tagMode)}; defaulting to 'all'`);
+                    this.tagMode = "all";
+                }
             }
 
             evaluate(tokens) {
-                logger.debug("eval item properties with tokens: " + stringify(tokens))
+                logger.debug("eval item unified with tokens: " + stringify(tokens));
 
                 if (tokens.length < 1) {
-                    logger.debug("no tokens, eval item properties fail")
+                    logger.debug("no tokens, eval item fail");
                     return new EvaluationResult(false, tokens, null, null);
                 }
 
-                let expResult = evaluateExpressionOrString(this.singleExpression, tokens.slice());
-                if (!expResult.success) {
-                    logger.debug("eval item properties: inner expression eval fail");
+                // If an inner expression is provided, evaluate it first
+                if (this.expr) {
+                    const expResult = evaluateExpressionOrString(this.expr, tokens.slice());
+                    if (!expResult.success) {
+                        logger.debug("eval item: inner expression failed");
+                        return new EvaluationResult(false, tokens, null, null);
+                    }
+
+                    // group context requirements
+                    if (this.groupContext && !(expResult.groupItems && expResult.groupItems.length > 0) && !(expResult.executeParameter && expResult.executeParameter.items && expResult.executeParameter.items.length > 0)) {
+                        logger.warn(`eval item fail: group context required but no group found; groupContext=${this.groupContext}; expr=${stringify(this.expr)}`);
+                        return new EvaluationResult(false, tokens, null, null);
+                    }
+
+                    // determine candidate items by tag/type
+                    let remainingItems = [];
+                    const tags = (this.tag == null) ? [] : (Array.isArray(this.tag) ? this.tag : [this.tag]);
+                    if (!tags || tags.length === 0) {
+                        remainingItems = items.getItems();
+                        logger.debug("eval item: get all items");
+                    } else if (this.tagMode === "all") {
+                        remainingItems = items.getItemsByTag(...tags);
+                        logger.debug("eval item: filter items by tags (all): " + tags + "; remaining: " + remainingItems.length);
+                    } else { // any
+                        // union of items for any tag
+                        let set = new Map();
+                        tags.forEach(t => {
+                            let subset = items.getItemsByTag(t) || [];
+                            subset.forEach(it => set.set(it.name || JSON.stringify(it), it));
+                        });
+                        remainingItems = Array.from(set.values());
+                        logger.debug("eval item: filter items by tags (any): " + tags + "; remaining: " + remainingItems.length);
+                    }
+
+                    if (this.type != null) {
+                        const types = Array.isArray(this.type) ? this.type : [this.type];
+                        remainingItems = remainingItems.filter(item => types.includes(item.type));
+                        logger.debug("eval item: filter items by type: " + this.type + "; remaining: " + remainingItems.length);
+                    }
+
+                    // apply group filtering if requested
+                    // collect groups from expResult.groupItems
+                    let groups = [];
+                    if (expResult.groupItems && expResult.groupItems.length > 0) {
+                        groups = groups.concat(expResult.groupItems);
+                    }
+
+                    if (this.groupContext) {
+                        if (groups.length === 0) {
+                            logger.debug("eval item fail: group required but none available");
+                            return new EvaluationResult(false, tokens, null, null);
+                        }
+
+                            if (this.groupContext === "one" && groups.length > 1) {
+                                logger.warn(`eval item fail: groupContext 'one' but multiple groups matched (${groups.length}); groups=[${groups.map(g=>g.name||g.label||'<unknown>').join(', ')}]`);
+                            return new EvaluationResult(false, tokens, null, null);
+                        }
+
+                        // collect items in subgroup(s)
+                        // depending on groupContext, decide which groups to apply
+                        let groupsToUse = groups;
+                        if (this.groupContext === 'last') {
+                            groupsToUse = [groups[groups.length - 1]];
+                        } else if (this.groupContext === 'one') {
+                            groupsToUse = [groups[0]];
+                        }
+
+                        let filtered = [];
+                        groupsToUse.forEach(g => {
+                            filtered = filtered.concat(remainingItems.filter(item => itemIsInSubGroup(item, g)));
+                        });
+                        remainingItems = filtered;
+                        logger.debug("eval item: filter items by group context; remaining: " + remainingItems.length);
+                    }
+
+                    if (!expResult.executeParameter) {
+                        expResult.executeParameter = { items: [] };
+                    }
+                    if (!expResult.executeParameter.items) {
+                        expResult.executeParameter.items = [];
+                    }
+
+                    // apply matchMultiple logic
+                    if (!this.matchMultiple) {
+                        if (remainingItems.length === 0) {
+                            logger.warn(`eval item fail: no items matched; filters={type:${JSON.stringify(this.type)}, tag:${JSON.stringify(this.tag)}, tagMode:${this.tagMode}}`);
+                            return new EvaluationResult(false, tokens, null, null);
+                        }
+                        if (remainingItems.length > 1) {
+                            logger.warn(`eval item fail: multiple items matched (${remainingItems.length}) but matchMultiple is false; items=[${remainingItems.map(i=>i.name||i.label||'<unknown>').join(', ')}]`);
+                            return new EvaluationResult(false, tokens, null, null);
+                        }
+                        // single item
+                        if (this.include) {
+                            expResult.executeParameter.items = expResult.executeParameter.items.concat(remainingItems);
+                        }
+                    } else {
+                        // allow multiple
+                        if (this.include) {
+                            expResult.executeParameter.items = expResult.executeParameter.items.concat(remainingItems);
+                        }
+                    }
+
+                    return new EvaluationResult(true, expResult.remainingTokens, expResult.executeFunction, expResult.executeParameter, expResult.groupItems || []);
+                }
+
+                // No inner expression: behave like label matching
+                let remainingItems = items.getItems();
+                // apply tag/type filters before label matching
+                const tags = (this.tag == null) ? [] : (Array.isArray(this.tag) ? this.tag : [this.tag]);
+                if (tags && tags.length > 0) {
+                    remainingItems = items.getItemsByTag(...tags);
+                    logger.debug("eval item label: filter items by tags: " + tags + "; remaining: " + remainingItems.length);
+                }
+                if (this.type != null) {
+                    const types = Array.isArray(this.type) ? this.type : [this.type];
+                    remainingItems = remainingItems.filter(item => types.includes(item.type));
+                    logger.debug("eval item label: filter items by type: " + this.type + "; remaining: " + remainingItems.length);
+                }
+
+                const matchResult = getItemByLabelOrSynonym(remainingItems, tokens);
+                if (!matchResult) {
+                    logger.debug("eval item label fail");
                     return new EvaluationResult(false, tokens, null, null);
                 }
 
-                if (this.groupRequired && expResult.groupItem == null) {
-                    logger.debug("eval item properties fail: group required but not found");
-                    return new EvaluationResult(false, tokens, null, null);
+                let executeParameter = null;
+                if (this.include) {
+                    executeParameter = { items: [matchResult.matchedItem] };
                 }
-
-                logger.debug("eval item properties: search items");
-
-                let remainingItems = null;
-                if (this.tags.length == 0) {
-                    remainingItems = items.getItems();
-                    logger.debug("eval item properties: get all items");
-                } else {
-                    remainingItems = items.getItemsByTag(...this.tags);
-                    logger.debug("eval item properties: filter items by tags: " + this.tags + "; remaining: " + remainingItems.length);
-                }
-
-                if (this.itemType != null) {
-                    remainingItems = remainingItems.filter(item => item.type == this.itemType);
-                    logger.debug("eval item properties: filter items by type: " + this.itemType + "; remaining: " + remainingItems.length);
-                }
-
-                if (this.groupRequired) {
-                    remainingItems = remainingItems.filter(item => itemIsInSubGroup(item, expResult.groupItem));
-                    logger.debug("eval item properties: filter items by group: " + expResult.groupItem.name + "; remaining: " + remainingItems.length);
-                }
-
-                if (!expResult.executeParameter) {
-                    expResult.executeParameter = { items: [] };
-                }
-
-                if (!expResult.executeParameter.items) {
-                    expResult.executeParameter.items = [];
-                }
-
-                expResult.executeParameter.items = expResult.executeParameter.items.concat(remainingItems);
-                return new EvaluationResult(true, expResult.remainingTokens, expResult.executeFunction, expResult.executeParameter);
+                const groupItems = (matchResult.matchedItem && matchResult.matchedItem.type === 'Group') ? [matchResult.matchedItem] : [];
+                return new EvaluationResult(true, matchResult.remainingTokens, null, executeParameter, groupItems);
             }
         }
+
 
         class EvaluationResult {
             /**
@@ -360,14 +453,14 @@ actions:
              * @param {string[]} remainingTokens
              * @param {function} executeFunction    the function to execute in the end
              * @param {object} executeParameter     the parameter inserted in the executeFunction. Should be a single object that can hold multiple parameters in its key/value pairs.
-             * @param {object} groupItem
+             * @param {object[]} groupItems   optional array of group items related to this result
              */
-            constructor(success, remainingTokens, executeFunction, executeParameter, groupItem) {
-                this.success = success;
-                this.remainingTokens = remainingTokens || [];
-                this.executeFunction = executeFunction;
-                this.executeParameter = executeParameter;
-                this.groupItem = groupItem;
+                constructor(success, remainingTokens, executeFunction, executeParameter, groupItems) {
+                    this.success = success;
+                    this.remainingTokens = remainingTokens || [];
+                    this.executeFunction = executeFunction;
+                    this.executeParameter = executeParameter;
+                    this.groupItems = groupItems || [];
             }
         }
 
@@ -633,6 +726,35 @@ actions:
             return utterance.split(" ").filter(token => token !== "");
         }
 
+        /**
+         * Merges executeParameter objects, combining their properties
+         * @param {object} current Current executeParameter object
+         * @param {object} additional Additional executeParameter object to merge
+         * @returns {object} Merged executeParameter object
+         */
+        function mergeExecuteParameters(current, additional) {
+            if (!current && !additional) return null;
+            if (!current) return additional;
+            if (!additional) return current;
+
+            const result = { ...current };
+            
+            // Special handling for items array
+            if (additional.items) {
+                result.items = result.items || [];
+                result.items = result.items.concat(additional.items);
+            }
+
+            // Merge any other properties
+            Object.keys(additional).forEach(key => {
+                if (key !== 'items') {
+                    result[key] = additional[key];
+                }
+            });
+
+            return result;
+        }
+
         function stringify(obj) {
             return JSON.stringify(obj, null, 2);
         }
@@ -704,24 +826,14 @@ actions:
             turn,
             opt(onOff),
             allThe,
-            itemProperties(
-                seq(
-                    lights,
-                    opt(onOff),
-                    inOfThe,
-                    itemLabel(false, true)),
-                ["Light"], true, "Switch"),
+            item({ type: "Switch", tag: "Light", matchMultiple: true }, { expr: seq(lights, opt(onOff), inOfThe, item({ type: "Group" })), groupContext: "last" }),
             opt(onOff))
         );
         rbi.addRule(seq(
             turn,
             opt(onOff),
             allThe,
-            itemProperties(
-                seq(
-                    itemLabel(false, true),
-                    lights),
-                ["Light"], true, "Switch"),
+            item({ type: "Switch", tag: "Light", matchMultiple: true }, { expr: seq(item({ type: "Group" }), lights), groupContext: "last" }),
             opt(onOff))
         );
 
@@ -732,15 +844,7 @@ actions:
                 put,
                 opt(upDown),
                 allThe,
-                itemProperties(
-                    seq(
-                        rollershutters,
-                        opt(upDown),
-                        inOfThe,
-                        itemLabel(false, true)
-                    ),
-                    null, true, "Rollershutter"
-                ),
+            item({ type: "Rollershutter", matchMultiple: true }, { expr: seq(rollershutters, opt(upDown), inOfThe, item({ type: "Group" })), groupContext: "last" }),
                 opt(upDown),
             )
         );
@@ -748,14 +852,7 @@ actions:
             seq(
                 lowerRaise,
                 allThe,
-                itemProperties(
-                    seq(
-                        rollershutters,
-                        inOfThe,
-                        itemLabel(false, true)
-                    ),
-                    null, true, "Rollershutter"
-                )
+            item({ type: "Rollershutter", matchMultiple: true }, { expr: seq(rollershutters, inOfThe, item({ type: "Group" })), groupContext: "last" })
             )
         );
         rbi.addRule(
@@ -763,13 +860,7 @@ actions:
                 put,
                 opt(upDown),
                 allThe,
-                itemProperties(
-                    seq(
-                        itemLabel(false, true),
-                        rollershutters
-                    ),
-                    null, true, "Rollershutter"
-                ),
+            item({ type: "Rollershutter", matchMultiple: true }, { expr: seq(item({ type: "Group" }), rollershutters), groupContext: "last" }),
                 opt(upDown),
             )
         );
@@ -777,22 +868,16 @@ actions:
             seq(
                 lowerRaise,
                 allThe,
-                itemProperties(
-                    seq(
-                        itemLabel(false, true),
-                        rollershutters
-                    ),
-                    null, true, "Rollershutter"
-                )
+            item({ type: "Rollershutter", matchMultiple: true }, { expr: seq(item({ type: "Group" }), rollershutters), groupContext: "last" })
             )
         );
 
         // ON OFF type
-        rbi.addRule(seq(turn, opt(onOff), the, itemLabel(), opt(onOff)));
+        rbi.addRule(seq(turn, opt(onOff), the, item(), opt(onOff)));
 
         // UP DOWN type
-        rbi.addRule(seq(put, opt(upDown), the, itemLabel(), opt(upDown)));
-        rbi.addRule(seq(lowerRaise, the, itemLabel()));
+        rbi.addRule(seq(put, opt(upDown), the, item(), opt(upDown)));
+        rbi.addRule(seq(lowerRaise, the, item()));
 
         // *************************************
 
@@ -805,10 +890,10 @@ actions:
         let imIn = alt("im", seq("in", opt(alt("der", "dem"))));
 
         // ON OFF type
-        rbi.addRule(seq(schalte, denDieDas, itemLabel(), einAnAus));
+        rbi.addRule(seq(schalte, denDieDas, item(), einAnAus));
 
         // UP DOWN type
-        rbi.addRule(seq(fahre, denDieDas, itemLabel(), hochRunter));
+        rbi.addRule(seq(fahre, denDieDas, item(), hochRunter));
 
 
         let alleDie = alt("alle", denDieDas);
@@ -817,14 +902,8 @@ actions:
         let lichter = alt("licht", "lichter", "lampen");
         rbi.addRule(seq(
             schalte,
-            alleDie,    
-            itemProperties(
-                seq(
-                    lichter,
-                    opt(einAnAus),
-                    imIn,
-                    itemLabel(false, true)),
-                ["Light"], true, "Switch"),
+            alleDie,
+            item({ type: "Switch", tag: "Light", matchMultiple: true }, { expr: seq(lichter, opt(einAnAus), imIn, item({ type: "Group" })), groupContext: "last" }),
             opt(einAnAus))
         );
 
@@ -834,14 +913,7 @@ actions:
             seq(
                 fahre,
                 denDieDas,
-                itemProperties(
-                    seq(
-                        rollos,
-                        imIn,
-                        itemLabel(false, true)
-                    ),
-                    null, true, "Rollershutter"
-                ),
+            item({ type: "Rollershutter", matchMultiple: true }, { expr: seq(rollos, imIn, item({ type: "Group" })), groupContext: "last" }),
                 hochRunter
             )
         );
