@@ -5,32 +5,12 @@ It is rule based and no data needs to be sent to any external API.
 
 Examples will use the Main UI.
 
-## Usage
-You can use e.g. the [openHAB Android](https://www.openhab.org/docs/apps/android.html) to [send speech commands](#4-Enjoy) to your openHAB system, which will be interpreted by this voice control tool.
+## Usage and Setup
+This voice control tool has been published as [rule template for openHAB](https://community.openhab.org/t/cuevox-a-rule-based-voice-interpreter-4-0-0-0-4-9-9-9/161308).
 
-Commands such as `turn off the kitchen light` or `bring down the bathroom rollershutter` will work, if you have items with unique labels or synonyms `kitchen light` or `bathroom rollershutter`.
+Further documentation on usage and basic setup is [maintained here](README.cuevox.md). Setup can be done manually as described below.
 
-Currently only the On/Off and Up/Down type are supported in English and German. Feel free to contribute!
-
-## Prerequisites
-### JavaScript Scripting addon
-The files only work with the GraalJS script engine.
-Ensure that the [JavaScript Scripting addon](https://www.openhab.org/addons/automation/jsscripting/) is installed in your openHAB system.
-
-### VoiceCommand Item
-The scripts need the spoken input, which is usually saved in a special item. As soon as the item value changes, the scripts will run and try to interpret the spoken command. With this setup, the microphone input of the openHAB Android app will work as source of the speech commands.
-
-Create a new item `VoiceCommand`.
-
-![](/docs/voice_command_item.jpg)
-
-Configure it in the settings as target for the rule voice interpreter: Settings->Rule Voice Interpreter->Voice Command Item
-
-![](/docs/settings_rule_voice_interpreter.jpg)
-
-![](/docs/rule_voice_interpreter_item.jpg)
-
-## Installation in openHAB
+## Manual Installation in openHAB
 
 ### 1. Copy Files and Customize
 Copy the whole repositoy to the following folder in your openHAB installation: `<OPENHAB_CONF>/automation/personal/voice-control-openhab`
