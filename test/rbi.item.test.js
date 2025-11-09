@@ -322,20 +322,36 @@ describe("item() expression", () => {
     });
 
     describe("matching behavior", () => {
-        it("prefers shortest exact match and does not backtrack", () => {
+        it("prefers shortest exact match", () => {
             const itemA = {name: "a", label: "a", sendCommand: jest.fn()};
             const itemAB = {name: "ab", label: "a b", sendCommand: jest.fn()};
             
             when(openhab.items.getItems).mockReturnValue([itemA, itemAB]);
 
-            // Expression that would work with "a b" but will fail because it matches "a" first
+            // Expression that would work with "a b" but prefers "a" as shortest match (would fail for "a b" overall anyway)
             const testExpression = seq(item(), "b", cmd("foo", 123));
             rbi.addRule(testExpression);
 
             rbi.interpretUtterance("a b foo");
-            // No command sent because shortest match "a" was chosen and "b" didn't match rest
+            expect(itemA.sendCommand).toHaveBeenCalledWith(123);
+            expect(itemAB.sendCommand).not.toHaveBeenCalled();
+        });
+
+        it("does not backtrack", () => {
+            const itemA = {name: "a", label: "a", sendCommand: jest.fn()};
+            const itemAB = {name: "ab", label: "a b", sendCommand: jest.fn()};
+            const itemC = {name: "c", label: "c", sendCommand: jest.fn()};
+
+            when(openhab.items.getItems).mockReturnValue([itemA, itemAB, itemC]);
+
+            // Expression that would work with "a b" and "c" items, but will fail because it matches "a" first
+            const testExpression = seq(item(), "b", item(), cmd("foo", 123));
+            rbi.addRule(testExpression);
+
+            rbi.interpretUtterance("a b b c foo");
             expect(itemA.sendCommand).not.toHaveBeenCalled();
             expect(itemAB.sendCommand).not.toHaveBeenCalled();
+            expect(itemC.sendCommand).not.toHaveBeenCalled();
         });
     });
 });

@@ -2,7 +2,7 @@ jest.mock("openhab");
 const openhab = require("openhab");
 openhab.log = jest.fn().mockReturnValue({ info: jest.fn(), debug: jest.fn(), warn: jest.fn() });
 
-const { tokenizeNormalized, getSynonymTokens, shortestExactMatchForItem, collectAllMatches, pickUniqueShortestMatch } = require("../lib/openHAB/ruleBasedInterpreter");
+const { tokenizeNormalized, getSynonymTokens, shortestExactMatchForItem, collectAllMatches, pickShortestMatch } = require("../lib/openHAB/ruleBasedInterpreter");
 
 describe('matcher helpers', () => {
   test('shortestExactMatchForItem returns null if no exact match', () => {
@@ -35,10 +35,10 @@ describe('matcher helpers', () => {
     expect(matches[0].matchLength).toBe(1);
   });
 
-  test('pickUniqueShortestMatch returns null on ties', () => {
+  test('pickShortestMatch returns all on ties', () => {
     const m1 = { item: { label: 'TV' }, matchLength: 1 };
     const m2 = { item: { label: 'Light' }, matchLength: 1 };
-    const picked = pickUniqueShortestMatch([m1, m2]);
-    expect(picked).toBeNull();
+    const picked = pickShortestMatch([m1, m2]);
+    expect(picked).toEqual([m1, m2]);
   });
 });

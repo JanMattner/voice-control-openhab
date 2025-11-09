@@ -90,21 +90,21 @@ describe("single sequence expression", () => {
 
     describe("executeFunction precedence", () => {
         it("selects the first non-null executeFunction from child expressions", () => {
-            const item1 = {name: "item1", label: "item1", sendCommand: jest.fn()};
-            const item2 = {name: "item2", label: "item2", sendCommand: jest.fn()};
-            
-            when(openhab.items.getItems).mockReturnValue([item1, item2]);
+            const itemOne = {name: "itemOne", label: "itemOne", sendCommand: jest.fn()};
+            const itemTwo = {name: "itemTwo", label: "itemTwo", sendCommand: jest.fn()};
+
+            when(openhab.items.getItems).mockReturnValue([itemOne, itemTwo]);
 
             const func1 = jest.fn();
             const func2 = jest.fn();
 
             // First expression provides executeFunction
-            const expr1 = item({ label: "item1" });
-            const expr2 = item({ label: "item2" });
-            
+            const expr1 = item({ label: "itemOne" });
+            const expr2 = item({ label: "itemTwo" });
+
             rbi.addRule(seq(expr1, expr2), func1);
-            rbi.interpretUtterance("item1 item2");
-            
+            rbi.interpretUtterance("itemOne itemTwo");
+
             expect(func1).toHaveBeenCalled();
             expect(func2).not.toHaveBeenCalled();
 
@@ -115,7 +115,7 @@ describe("single sequence expression", () => {
 
             // Second expression provides executeFunction
             rbi.addRule(seq(expr2, expr1), func2);
-            rbi.interpretUtterance("item2 item1");
+            rbi.interpretUtterance("itemTwo itemOne");
             
             expect(func2).toHaveBeenCalled();
             expect(func1).not.toHaveBeenCalled();
