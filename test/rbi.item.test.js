@@ -99,8 +99,8 @@ describe("item() expression", () => {
                 { expr: seq(item({ type: "Group", include: false }), "or", item({ type: "Group", include: false })), groupContext: "last" }),
             cmd("works", cmdParam)
         );
-        const action = jest.fn((items, param) => items.forEach(i => i.sendCommand(param)));
-        rbi.addRule(expr, action);
+
+        rbi.addRule(expr, null);
 
         rbi.interpretUtterance("something or otherthing works");
 
@@ -127,8 +127,8 @@ describe("item() expression", () => {
                 { expr: seq(item({ type: "Group" }), item({ type: "Group" })), groupContext: "all" }),
             cmd("on", cmdParam)
         );
-        const action = jest.fn((items, param) => items.forEach(i => i.sendCommand(param)));
-        rbi.addRule(expr, action);
+
+        rbi.addRule(expr, null);
         rbi.interpretUtterance("a b on");
 
         expect(item1.sendCommand).toHaveBeenCalledWith(cmdParam);

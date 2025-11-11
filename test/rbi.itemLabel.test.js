@@ -35,23 +35,19 @@ describe("itemLabel expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("item one foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
         rbi.interpretUtterance("item two foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
         rbi.interpretUtterance("third item foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemThree.sendCommand.mock.calls.length).toBe(1);
         expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -78,29 +74,24 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("bar one foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
         rbi.interpretUtterance("barbar foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(2);
         expect(itemOne.sendCommand.mock.calls[1].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[1][0]).toBe(cmdParameter);
 
         rbi.interpretUtterance("second bar foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
 
         rbi.interpretUtterance("bar three foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemThree.sendCommand.mock.calls.length).toBe(1);
         expect(itemThree.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemThree.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -113,8 +104,7 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(), opt("Room"), cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
 
         // Both items match the utterance "TV Room foo" (short label "TV" and long label "TV Room").
         // Shortest exact match ("TV") should be preferred.
@@ -130,8 +120,7 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
 
         // Both items have the exact same shortest label -> ambiguous -> no command sent
         rbi.interpretUtterance("TV foo");
@@ -153,8 +142,7 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(), opt("Room"), cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
 
         // Utterance "TV Room foo" should match both (synonym "TV" and synonym "TV Room"),
         // but the shortest exact synonym ("TV") wins -> itemShortSyn should be called.
@@ -177,8 +165,7 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
 
         // Both provide a shortest exact match of length 1 -> ambiguous -> no command sent
         rbi.interpretUtterance("TV foo");
@@ -200,8 +187,7 @@ describe("itemLabel expression", () => {
 
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
 
         rbi.interpretUtterance("TV foo");
         expect(item1.sendCommand.mock.calls.length).toBe(1);
@@ -218,8 +204,7 @@ describe("itemLabel expression", () => {
 
             let cmdParameter = 321;
             let testExpression = seq(itemLabel(true, true), cmd("foo", cmdParameter));
-            let testFunction = jest.fn();
-            rbi.addRule(testExpression, testFunction);
+            rbi.addRule(testExpression, null);
 
             rbi.interpretUtterance(`${sharedLabel} foo`);
             // Only the group should be considered due to isGroup === true
@@ -237,8 +222,7 @@ describe("itemLabel expression", () => {
 
             let cmdParameter = 456;
             let testExpression = seq(itemLabel(true, false), cmd("foo", cmdParameter));
-            let testFunction = jest.fn();
-            rbi.addRule(testExpression, testFunction);
+            rbi.addRule(testExpression, null);
 
             rbi.interpretUtterance(`${sharedLabel} foo`);
             // No single exact match should be found -> no sendCommand calls
@@ -254,8 +238,7 @@ describe("itemLabel expression", () => {
 
             let cmdParameter = 789;
             let testExpression = seq(itemLabel(), cmd("foo", cmdParameter));
-            let testFunction = jest.fn();
-            rbi.addRule(testExpression, testFunction);
+            rbi.addRule(testExpression, null);
 
             rbi.interpretUtterance(`${sharedLabel} foo`);
             // With omitted isGroup (null) both items are considered -> ambiguity -> no commands

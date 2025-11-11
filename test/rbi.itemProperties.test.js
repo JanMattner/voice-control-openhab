@@ -38,11 +38,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties("something", ["bar"], false),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -63,11 +61,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties("something", ["foo", "bar"], false),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -87,11 +83,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties("something", null, false, "foo"),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -112,11 +106,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties("something", ["foo", "bar"], false, "foo"),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemTwo.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -137,11 +129,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something itemTwo works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -161,11 +151,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something itemThree works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -185,11 +173,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true, "foobar"),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something itemThree works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
@@ -209,11 +195,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something itemOne works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
         expect(itemThree.sendCommand.mock.calls.length).toBe(0);
@@ -231,11 +215,9 @@ describe("itemProperties expression", () => {
         
         let cmdParameter = 123;
         let testExpression = seq(itemProperties(seq("something",itemLabel(false, true)), ["foo"], true),cmd("works", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("something itemOne works");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(0);
         expect(itemTwo.sendCommand.mock.calls.length).toBe(0);
         expect(itemThree.sendCommand.mock.calls.length).toBe(0);
@@ -269,11 +251,9 @@ describe("itemProperties expression", () => {
                     itemLabel(false, true)),
                 ["Light"], true, "Switch"),
             opt(onOff))
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         
         rbi.interpretUtterance("turn on all the lights in itemThree");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(itemOne.sendCommand.mock.calls.length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0].length).toBe(1);
         expect(itemOne.sendCommand.mock.calls[0][0]).toBe("ON");

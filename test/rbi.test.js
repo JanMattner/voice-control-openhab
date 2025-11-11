@@ -18,7 +18,7 @@ openhab.log = jest.fn().mockReturnValue({
     warn: jest.fn()
     //*/
 });
-const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties } = require("../lib/openHAB/ruleBasedInterpreter");
+const { RuleBasedInterpreter, alt, seq, opt, cmd, itemLabel, itemProperties, item } = require("../lib/openHAB/ruleBasedInterpreter");
 
 let rbi = new RuleBasedInterpreter();
 
@@ -116,6 +116,77 @@ describe("interpretUtterance", () => {
             rbi.addRule(testExpression, testFunction);
             rbi.interpretUtterance(undefined);
             expect(testFunction.mock.calls.length).toBe(0);
+        });
+    });
+
+    describe("executeFunction behavior", () => {
+        it("executeFunction from rule overrides the one from the expression", () => {
+            const itemOne = {name: "itemOne", label: "itemOne", sendCommand: jest.fn()};
+
+            when(openhab.items.getItems).mockReturnValue([itemOne]);
+
+            const func1 = jest.fn();
+
+            // no executeFunction from rule, so the one from the expression is used
+            rbi.addRule(seq(item(), cmd("foo", 123)), null);
+            rbi.interpretUtterance("itemOne foo");
+
+            expect(itemOne.sendCommand).toHaveBeenCalledWith(123);
+            expect(func1).not.toHaveBeenCalled();
+
+            // Reset
+            func1.mockClear();
+            itemOne.sendCommand.mockClear();
+            rbi.clearRules();
+
+            // executeFunction from rule should override the one from the expression
+            rbi.addRule(seq(item(), cmd("foo", 123)), func1);
+            rbi.interpretUtterance("itemOne foo");
+
+            expect(func1).toHaveBeenCalled();
+            expect(itemOne.sendCommand).not.toHaveBeenCalled();
+        });
+
+        it("executes function from rule even when no item expression is contained", () => {
+            let testExpression = cmd("foo", 1);
+            let testFunction = jest.fn();
+            rbi.addRule(testExpression, testFunction);
+            rbi.interpretUtterance("foo");
+            expect(testFunction).toHaveBeenCalledTimes(1);
+        });
+
+        it("executeFunction from rule is called with correct parameters", () => {
+            const itemA = {name: "itemA", label: "itemA", sendCommand: jest.fn()};
+            const itemB = {name: "itemB", label: "itemB", sendCommand: jest.fn()};
+
+            when(openhab.items.getItems).mockReturnValue([itemA, itemB]);
+            when(openhab.items.getItemsByTag).calledWith(...["tagX"]).mockReturnValue([itemA, itemB]);
+
+            const func1 = jest.fn();
+
+            // no executeFunction from rule, so the one from the expression is used. Called with both items.
+            rbi.addRule(seq(item({tag: "tagX", matchMultiple: true}, {expr: "bar"}), cmd("foo", 123)), func1);
+            rbi.interpretUtterance("bar foo");
+
+            expect(itemA.sendCommand).not.toHaveBeenCalled();
+            expect(itemB.sendCommand).not.toHaveBeenCalled();
+            expect(func1).toHaveBeenCalledTimes(1);
+            expect(func1).toHaveBeenCalledWith({items: [itemA, itemB]});
+
+            // reset
+            itemA.sendCommand.mockClear();
+            itemB.sendCommand.mockClear();
+            func1.mockClear();
+            rbi.clearRules();
+
+            // no executeFunction from rule, so the one from the expression is used. Called with single item.
+            rbi.addRule(seq(item(), cmd("foo", 123)), func1);
+            rbi.interpretUtterance("itemB foo");
+
+            expect(itemA.sendCommand).not.toHaveBeenCalled();
+            expect(itemB.sendCommand).not.toHaveBeenCalled();
+            expect(func1).toHaveBeenCalledTimes(1);
+            expect(func1).toHaveBeenCalledWith({items: [itemB]});
         });
     });
 });

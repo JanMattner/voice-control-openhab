@@ -27,24 +27,14 @@ beforeEach(() => {
 });
 
 describe("command expression", () => {
-    it("executes no function when no item expression is contained", () => {
-        let testExpression = cmd("foo", 1);
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
-        rbi.interpretUtterance("foo");
-        expect(testFunction.mock.calls.length).toBe(0);
-    });
-
     it("sends command to found item", () => {
         let retItem = {label: "my item", sendCommand: jest.fn()};
         openhab.items.getItems.mockReturnValue([retItem])
         
         let cmdParameter = 123;
         let testExpression = seq(itemLabel(),cmd("foo", cmdParameter));
-        let testFunction = jest.fn();
-        rbi.addRule(testExpression, testFunction);
+        rbi.addRule(testExpression, null);
         rbi.interpretUtterance("my item foo");
-        expect(testFunction.mock.calls.length).toBe(0);
         expect(retItem.sendCommand.mock.calls.length).toBe(1);
         expect(retItem.sendCommand.mock.calls[0].length).toBe(1);
         expect(retItem.sendCommand.mock.calls[0][0]).toBe(cmdParameter);
